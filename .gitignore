@@ -1,0 +1,56 @@
+# Node modules
+node_modules/
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# iOS
+*.hmap
+*.gcno
+*.gcda
+*.profdata
+*.xccheckout
+*.xcuserstate
+*.xcuserdata
+*.xcworkspace
+*.xcworkspacedata
+DerivedData/
+ios/Pods/
+
+# Android
+*.iml
+*.ipr
+*.iws
+.idea/
+.gradle/
+local.properties
+android/app/build/
+android/.gradle/
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Misc
+*.pem
+*.lock
+*.orig
+*.swp
+*.swo
+*.~*
+debug.log
