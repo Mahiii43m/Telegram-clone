@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     width: '100%',
-    height: height * 0.52,
+    height: height * 0.53,
     backgroundColor: '#FF6B35',
     borderTopLeftRadius: height * 0.42,
     borderTopRightRadius: height * 0.42,

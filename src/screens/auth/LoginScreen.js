@@ -193,7 +193,7 @@ export default function LoginScreen({ navigation }) {
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>
-                By tapping "SIGN IN", you agree to our
+                By tapping "SIGN IN" you agree to our
               </Text>
               <TouchableOpacity>
                 <Text style={styles.termsText}>
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     width: '100%',
-    height: height * 0.52,
+    height: height * 0.53,
     backgroundColor: '#DD984B',
     borderTopLeftRadius: height * 0.92,
     borderTopRightRadius: height * 0.92,
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     borderRadius: 999,
     borderWidth: 2,
-    borderColor: 'rgba(0, 0, 0, 0.4)',
+    borderColor: 'rgba(125, 125, 125, 0.4)',
   },
   signalWave1: {
     width: 100,
@@ -304,13 +304,13 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderWidth: 1.5,
-    borderColor: 'rgba(0, 0, 0, 0.25)',
+    borderColor: 'rgba(105, 105, 105, 0.25)',
   },
   signalWave3: {
     width: 180,
     height: 180,
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.18)',
+    borderColor: 'rgba(105, 105, 105, 0.18)',
   },
   antennaContainer: {
     position: 'absolute',
@@ -324,12 +324,17 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   inputLabel: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     fontSize: 12,
     fontWeight: '600',
-    color: 'rgba(0, 0, 0, 0.5)',
+    color: 'rgba(0, 0, 0, 1)',
     marginBottom: 6,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    alignSelf: 'flex-start',
   },
   input: {
     backgroundColor: 'rgb(255, 255, 255)',
@@ -390,14 +395,14 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.25)',
+    color: 'rgba(255, 255, 255, 0.45)',
     textAlign: 'center',
     letterSpacing: 0.3,
   },
   termsText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#000000',
+    color: '#642323',
     marginTop: 3,
     letterSpacing: 0.3,
   },
