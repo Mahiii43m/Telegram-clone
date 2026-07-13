@@ -15,10 +15,12 @@ import {
 } from 'react-native';
 import AntennaTip from '../../assets/images/antenna-tip.svg';
 import LogoSVG from '../../assets/images/logo.svg';
+import { useAuth } from '../../context/AuthContext';
 
 const { width, height } = Dimensions.get('window');
 
 export default function LoginScreen({ navigation }) {
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -57,13 +59,9 @@ export default function LoginScreen({ navigation }) {
     ).start();
   }, []);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email.trim() || !email.includes('@') || !email.includes('.')) {
       setError('Please enter a valid email address');
-      return;
-    }
-    if (!email.toLowerCase().endsWith('@ssgi.gov.et')) {
-      setError('Email must be @ssgi.gov.et');
       return;
     }
     if (password.length < 6) {
@@ -72,15 +70,23 @@ export default function LoginScreen({ navigation }) {
     }
 
     setLoading(true);
-    setTimeout(() => {
+    setError('');
+
+    try {
+      await login({
+        email,
+        name: email.split('@')[0],
+      });
+      // Navigation happens automatically via AppNavigator when user state changes
+    } catch (err) {
+      setError('Login failed. Please try again.');
       setLoading(false);
-      navigation.navigate('Main');
-    }, 2000);
+    }
   };
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
       <View style={styles.hillContainer} />
       <Animated.View
         style={[
@@ -100,16 +106,19 @@ export default function LoginScreen({ navigation }) {
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
           >
+            {/* Logo */}
             <View style={styles.logoContainer}>
               <LogoSVG width={200} height={90} />
             </View>
 
+            {/* Title */}
             <View style={styles.textContainer}>
               <Text style={styles.welcomeText}>SIGN IN TO</Text>
               <Text style={styles.appName}>Orbit Chat</Text>
               <Text style={styles.subtitle}>FROM EARTH TO SPACE</Text>
             </View>
 
+            {/* Antenna with Signal Waves */}
             <View style={styles.broadcastContainer}>
               <View style={styles.signalWrapper}>
                 <Animated.View
@@ -143,9 +152,9 @@ export default function LoginScreen({ navigation }) {
             <View style={styles.inputWrapper}>
               <Text style={styles.inputLabel}>EMAIL</Text>
               <TextInput
-                style={[styles.input, error && styles.inputError]}
+                style={[styles.input, error ? styles.inputError : null]}
                 placeholder="yourname@ssgi.gov.et"
-                placeholderTextColor="rgba(255,255,255,0.35)"
+                placeholderTextColor="rgba(0,0,0,0.35)"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 value={email}
@@ -154,7 +163,7 @@ export default function LoginScreen({ navigation }) {
                   setEmail(text);
                 }}
                 editable={!loading}
-                selectionColor="#FF6B35"
+                selectionColor="#DD984B"
               />
             </View>
 
@@ -162,9 +171,9 @@ export default function LoginScreen({ navigation }) {
             <View style={styles.inputWrapper}>
               <Text style={styles.inputLabel}>PASSWORD</Text>
               <TextInput
-                style={[styles.input, error && styles.inputError]}
+                style={[styles.input, error ? styles.inputError : null]}
                 placeholder="Enter your password"
-                placeholderTextColor="rgba(255,255,255,0.35)"
+                placeholderTextColor="rgba(0,0,0,0.35)"
                 secureTextEntry
                 value={password}
                 onChangeText={(text) => {
@@ -172,12 +181,14 @@ export default function LoginScreen({ navigation }) {
                   setPassword(text);
                 }}
                 editable={!loading}
-                selectionColor="#FF6B35"
+                selectionColor="#DD984B"
               />
             </View>
 
+            {/* Error Message */}
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
+            {/* Login Button */}
             <TouchableOpacity
               style={[styles.button, loading && styles.buttonDisabled]}
               onPress={handleLogin}
@@ -191,25 +202,11 @@ export default function LoginScreen({ navigation }) {
               )}
             </TouchableOpacity>
 
+            {/* Footer */}
             <View style={styles.footer}>
               <Text style={styles.footerText}>
-                By tapping "SIGN IN" you agree to our
+                Please use your institutional email and admin-given password
               </Text>
-              <TouchableOpacity>
-                <Text style={styles.termsText}>
-                  Terms of Service & Privacy Policy
-                </Text>
-              </TouchableOpacity>
-
-              {/* ===== SIGN UP ROW – NOW HIGHLY VISIBLE ===== */}
-              <TouchableOpacity
-                style={styles.signUpRow}
-                onPress={() => navigation.navigate('SignUp')}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.signUpText}>Don't have an account?</Text>
-                <Text style={styles.signUpLink}> Sign Up</Text>
-              </TouchableOpacity>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -258,7 +255,7 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: 12,
     fontWeight: '700',
-    color: 'rgba(0, 0, 0,0.59)',
+    color: 'rgba(0, 0, 0, 0.59)',
     textTransform: 'uppercase',
     letterSpacing: 6,
     marginBottom: 2,
@@ -281,7 +278,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     height: 140,
-    marginTop:50,
+    marginTop: 50,
     marginBottom: 20,
   },
   signalWrapper: {
@@ -324,20 +321,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   inputLabel: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     fontSize: 12,
     fontWeight: '600',
     color: 'rgba(0, 0, 0, 1)',
     marginBottom: 6,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    alignSelf: 'flex-start',
   },
   input: {
-    backgroundColor: 'rgb(255, 255, 255)',
+    backgroundColor: '#ffffff',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.4,
@@ -349,13 +341,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000000',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(0,0,0,0.08)',
   },
   inputError: {
     borderColor: '#FF6B6B',
   },
   errorText: {
-    color: '#FF6B6B',
+    color: '#c0392b',
     fontSize: 13,
     marginTop: 6,
     marginBottom: 4,
@@ -369,17 +361,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#1B5674',
     shadowColor: '#1B5674',
-    shadowOffset: { width: 0, height: 0 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 0,
+    shadowRadius: 8,
+    elevation: 4,
     marginTop: 8,
-  
-    
   },
   buttonDisabled: {
     opacity: 0.5,
-    shadowOpacity: 0,
     elevation: 0,
   },
   buttonText: {
@@ -395,39 +384,9 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.45)',
+    color: 'rgba(0, 0, 0, 0.5)',
     textAlign: 'center',
     letterSpacing: 0.3,
-  },
-  termsText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#642323',
-    marginTop: 3,
-    letterSpacing: 0.3,
-  },
-  signUpRow: {
-    flexDirection: 'row',
-    marginTop: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,107,53,)', // subtle orange tint
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,107,53,0.3)',
-  },
-  signUpText: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#FFFFFF', // bright white
-  },
-  signUpLink: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#f6f6f6',
-    textDecorationLine: 'underline',
-    marginLeft: 4,
+    lineHeight: 18,
   },
 });

@@ -112,17 +112,13 @@ export default function ChatWindowScreen({ route, navigation }) {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-        {/* Clickable Header */}
-        <TouchableOpacity
-          style={styles.header}
-          onPress={() => groupDetails && setShowInfoModal(true)}
-          disabled={!groupDetails}
-          activeOpacity={0.8}
-        >
+        {/* Header */}
+        <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
             activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Svg width={24} height={24} viewBox="0 0 24 24">
               <Path
@@ -132,29 +128,38 @@ export default function ChatWindowScreen({ route, navigation }) {
             </Svg>
           </TouchableOpacity>
 
-          <View style={styles.headerTitleContainer}>
+          <TouchableOpacity
+            style={styles.headerTitleContainer}
+            onPress={() => groupDetails && setShowInfoModal(true)}
+            disabled={!groupDetails}
+            activeOpacity={groupDetails ? 0.7 : 1}
+          >
             <Text style={styles.headerTitle}>{contactName}</Text>
             <Text style={styles.headerSubtitle}>
-              {groupDetails 
-                ? `group • ${groupDetails.members.length} members (tap for info)` 
+              {groupDetails
+                ? `group • ${groupDetails.members.length} members • tap for info`
                 : 'satellite linked • active'}
             </Text>
-          </View>
+          </TouchableOpacity>
 
           {groupDetails ? (
-            // Info Icon
-            <View style={styles.infoIconWrapper}>
+            <TouchableOpacity
+              style={styles.infoIconWrapper}
+              onPress={() => setShowInfoModal(true)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
               <Svg width={22} height={22} viewBox="0 0 24 24">
                 <Path
                   d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"
                   fill="#ffffff"
                 />
               </Svg>
-            </View>
+            </TouchableOpacity>
           ) : (
             <View style={styles.headerRightSpacer} />
           )}
-        </TouchableOpacity>
+        </View>
 
         {/* Messages List */}
         <FlatList

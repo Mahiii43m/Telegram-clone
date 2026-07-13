@@ -16,9 +16,11 @@ export const AuthProvider = ({ children }) => {
       const storedUser = await AsyncStorage.getItem('user');
       if (storedUser) {
         setUser(JSON.parse(storedUser));
+      } else {
+        setUser(null);
       }
     } catch (error) {
-      console.log('Auth check error:', error);
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -29,7 +31,7 @@ export const AuthProvider = ({ children }) => {
       await AsyncStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
     } catch (error) {
-      console.log('Login error:', error);
+      throw new Error('Login failed');
     }
   };
 
@@ -38,7 +40,7 @@ export const AuthProvider = ({ children }) => {
       await AsyncStorage.removeItem('user');
       setUser(null);
     } catch (error) {
-      console.log('Logout error:', error);
+      // fail silently on logout
     }
   };
 
@@ -49,4 +51,10 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
