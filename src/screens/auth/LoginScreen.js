@@ -202,10 +202,21 @@ export default function LoginScreen({ navigation }) {
               )}
             </TouchableOpacity>
 
+            {/* ===== SIGN UP OPTION ===== */}
+            <View style={styles.signUpContainer}>
+              <Text style={styles.signUpText}>Don't have an account?</Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('SignUp')}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.signUpLink}> Sign Up</Text>
+              </TouchableOpacity>
+            </View>
+
             {/* Footer */}
             <View style={styles.footer}>
               <Text style={styles.footerText}>
-                Please use your institutional email and admin-given password
+                Please use your institutional email
               </Text>
             </View>
           </ScrollView>
@@ -226,7 +237,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     width: '100%',
-    height: height * 0.48,
+    height: height * 0.53,
     backgroundColor: '#DD984B',
     borderTopLeftRadius: height * 0.92,
     borderTopRightRadius: height * 0.92,
@@ -389,4 +400,29 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     lineHeight: 18,
   },
+  signUpContainer: {
+  flexDirection: 'row',
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginTop: 18,
+  paddingVertical: 10,
+  paddingHorizontal: 20,
+  borderRadius: 12,
+  backgroundColor: 'rgba(255,107,53,0.25)',
+  borderWidth: 1,
+  borderColor: 'rgba(255,107,53,0.3)',
+  },
+  signUpText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#000000',
+  },
+  signUpLink: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1B5674',
+    textDecorationLine: 'underline',
+    marginLeft: 4,
+  },
 });
+
