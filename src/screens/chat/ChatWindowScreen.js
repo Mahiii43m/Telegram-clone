@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f7',
   },
   header: {
-    backgroundColor: '#b6a378',
+    backgroundColor: '#1B5674',
     paddingTop: Platform.OS === 'android' ? 40 : 15,
     paddingBottom: 15,
     paddingHorizontal: 15,
