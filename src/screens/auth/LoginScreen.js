@@ -237,7 +237,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     width: '100%',
-    height: height * 0.53,
     backgroundColor: '#DD984B',
     borderTopLeftRadius: height * 0.92,
     borderTopRightRadius: height * 0.92,
