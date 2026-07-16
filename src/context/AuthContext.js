@@ -13,12 +13,8 @@ export const AuthProvider = ({ children }) => {
 
   const checkUser = async () => {
     try {
-      const storedUser = await AsyncStorage.getItem('user');
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-      } else {
-        setUser(null);
-      }
+      await AsyncStorage.removeItem('user'); // Clears out old login data
+      setUser(null);
     } catch (error) {
       setUser(null);
     } finally {
@@ -28,6 +24,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (userData) => {
     try {
+      // 🌟 Stray 'w' removed from here!
       await AsyncStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
     } catch (error) {

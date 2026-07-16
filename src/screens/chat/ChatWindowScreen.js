@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,9 +11,15 @@ import {
   Platform,
   Modal,
   ScrollView,
+  Image,
+  Alert,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { StatusBar } from 'expo-status-bar';
+// --- ATTACHMENT IMPORTS ---
+import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
+import { Audio } from 'expo-av';
 
 // Default mock messages for 1-on-1 chats
 const DEFAULT_1ON1_MESSAGES = [
@@ -37,10 +43,31 @@ const GENERAL_GROUP_MESSAGES = [
   { id: '2', text: 'Communications link is active and telemetry is verified.', sender: 'Staff', senderName: 'Staff Member', senderRole: 'Specialist', time: '10:32 AM' },
 ];
 
+// Helper to format seconds -> mm:ss
+const formatDuration = (totalSeconds) => {
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = Math.floor(totalSeconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
 export default function ChatWindowScreen({ route, navigation }) {
   const { contactName, groupDetails } = route.params || { contactName: 'Contact' };
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [inputText, setInputText] = useState('');
+
+  // --- Attachment staging (picked but not yet sent) ---
+  const [pendingAttachment, setPendingAttachment] = useState(null); // { type: 'image'|'file', uri, name }
+
+  // --- Voice recording state ---
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const recordingRef = useRef(null);
+  const recordingTimerRef = useRef(null);
+
+  // --- Voice playback state ---
+  const [playingMessageId, setPlayingMessageId] = useState(null);
+  const soundRef = useRef(null);
 
   // Choose messages based on group context
   const getInitialMessages = () => {
@@ -51,20 +78,260 @@ export default function ChatWindowScreen({ route, navigation }) {
 
   const [messages, setMessages] = useState(getInitialMessages());
 
+  // Clean up any active recording / sound on unmount
+  useEffect(() => {
+    return () => {
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+      if (recordingRef.current) {
+        recordingRef.current.stopAndUnloadAsync().catch(() => {});
+      }
+      if (soundRef.current) {
+        soundRef.current.unloadAsync().catch(() => {});
+      }
+    };
+  }, []);
+
+  // ---------- SEND ----------
   const handleSendMessage = () => {
-    if (!inputText.trim()) return;
+    if (!inputText.trim() && !pendingAttachment) return;
 
     const newMessage = {
-      id: String(messages.length + 1),
+      id: String(Date.now()),
       text: inputText.trim(),
       sender: 'me',
       senderName: 'Me',
       senderRole: 'Staff',
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      attachment: pendingAttachment || null,
     };
 
-    setMessages([...messages, newMessage]);
+    setMessages((prev) => [...prev, newMessage]);
     setInputText('');
+    setPendingAttachment(null);
+  };
+
+  // ---------- ATTACHMENTS: IMAGE ----------
+  const pickImage = async () => {
+    setShowAttachMenu(false);
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Please allow photo library access to attach images.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+      setPendingAttachment({
+        type: 'image',
+        uri: asset.uri,
+        name: asset.fileName || 'photo.jpg',
+      });
+    }
+  };
+
+  const takePhoto = async () => {
+    setShowAttachMenu(false);
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Please allow camera access to take a photo.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+      setPendingAttachment({
+        type: 'image',
+        uri: asset.uri,
+        name: asset.fileName || 'photo.jpg',
+      });
+    }
+  };
+
+  // ---------- ATTACHMENTS: DOCUMENT ----------
+  const pickDocument = async () => {
+    setShowAttachMenu(false);
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: '*/*',
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled) return;
+      const asset = result.assets ? result.assets[0] : result; // supports both SDK response shapes
+      setPendingAttachment({
+        type: 'file',
+        uri: asset.uri,
+        name: asset.name || 'document',
+        size: asset.size,
+      });
+    } catch (err) {
+      Alert.alert('Error', 'Could not open document picker.');
+    }
+  };
+
+  const removePendingAttachment = () => setPendingAttachment(null);
+
+  // ---------- VOICE RECORDING ----------
+  const startRecording = async () => {
+    try {
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Please allow microphone access to record voice messages.');
+        return;
+      }
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      recordingRef.current = recording;
+      setIsRecording(true);
+      setRecordingDuration(0);
+
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingDuration((prev) => prev + 1);
+      }, 1000);
+    } catch (err) {
+      Alert.alert('Error', 'Could not start recording.');
+    }
+  };
+
+  const stopRecording = async (send) => {
+    if (!recordingRef.current) return;
+
+    clearInterval(recordingTimerRef.current);
+    recordingTimerRef.current = null;
+
+    try {
+      await recordingRef.current.stopAndUnloadAsync();
+      const uri = recordingRef.current.getURI();
+      const duration = recordingDuration;
+      recordingRef.current = null;
+      setIsRecording(false);
+      setRecordingDuration(0);
+
+      if (send && uri) {
+        const newMessage = {
+          id: String(Date.now()),
+          text: '',
+          sender: 'me',
+          senderName: 'Me',
+          senderRole: 'Staff',
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          attachment: { type: 'voice', uri, duration },
+        };
+        setMessages((prev) => [...prev, newMessage]);
+      }
+    } catch (err) {
+      setIsRecording(false);
+      setRecordingDuration(0);
+      Alert.alert('Error', 'Could not save recording.');
+    }
+  };
+
+  const cancelRecording = () => stopRecording(false);
+  const finishRecording = () => stopRecording(true);
+
+  // ---------- VOICE PLAYBACK ----------
+  const playVoiceMessage = async (uri, id) => {
+    try {
+      if (soundRef.current) {
+        await soundRef.current.unloadAsync();
+        soundRef.current = null;
+        if (playingMessageId === id) {
+          setPlayingMessageId(null);
+          return;
+        }
+      }
+      const { sound } = await Audio.Sound.createAsync({ uri }, { shouldPlay: true });
+      soundRef.current = sound;
+      setPlayingMessageId(id);
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.didJustFinish) {
+          setPlayingMessageId(null);
+          sound.unloadAsync();
+          soundRef.current = null;
+        }
+      });
+    } catch (err) {
+      Alert.alert('Error', 'Could not play voice message.');
+    }
+  };
+
+  // ---------- RENDER ATTACHMENT INSIDE A BUBBLE ----------
+  const renderAttachment = (attachment, isMe, messageId) => {
+    if (!attachment) return null;
+
+    if (attachment.type === 'image') {
+      return (
+        <Image
+          source={{ uri: attachment.uri }}
+          style={styles.attachmentImage}
+          resizeMode="cover"
+        />
+      );
+    }
+
+    if (attachment.type === 'file') {
+      return (
+        <View style={styles.fileAttachmentRow}>
+          <Svg width={20} height={20} viewBox="0 0 24 24">
+            <Path
+              d="M6 2c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6H6zm7 7V3.5L18.5 9H13z"
+              fill={isMe ? '#ffffff' : '#1b5674'}
+            />
+          </Svg>
+          <Text
+            numberOfLines={1}
+            style={[styles.fileAttachmentName, isMe ? { color: '#ffffff' } : { color: '#333333' }]}
+          >
+            {attachment.name}
+          </Text>
+        </View>
+      );
+    }
+
+    if (attachment.type === 'voice') {
+      const isPlaying = playingMessageId === messageId;
+      return (
+        <TouchableOpacity
+          style={styles.voiceAttachmentRow}
+          onPress={() => playVoiceMessage(attachment.uri, messageId)}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.voicePlayButton, isMe ? { backgroundColor: 'rgba(255,255,255,0.25)' } : { backgroundColor: '#e9eef1' }]}>
+            <Svg width={14} height={14} viewBox="0 0 24 24">
+              {isPlaying ? (
+                <Path d="M6 5h4v14H6zM14 5h4v14h-4z" fill={isMe ? '#ffffff' : '#1b5674'} />
+              ) : (
+                <Path d="M8 5v14l11-7z" fill={isMe ? '#ffffff' : '#1b5674'} />
+              )}
+            </Svg>
+          </View>
+          <View style={styles.voiceWaveform}>
+            {[3, 6, 9, 6, 4, 8, 5, 3].map((h, idx) => (
+              <View
+                key={idx}
+                style={[
+                  styles.voiceWaveBar,
+                  { height: h * 2, backgroundColor: isMe ? 'rgba(255,255,255,0.8)' : '#1b5674' },
+                ]}
+              />
+            ))}
+          </View>
+          <Text style={[styles.voiceDuration, isMe ? { color: 'rgba(255,255,255,0.85)' } : { color: '#666666' }]}>
+            {formatDuration(attachment.duration || 0)}
+          </Text>
+        </TouchableOpacity>
+      );
+    }
+
+    return null;
   };
 
   const renderMessageItem = ({ item }) => {
@@ -97,7 +364,12 @@ export default function ChatWindowScreen({ route, navigation }) {
           {isGroup && !isMe && item.senderRole && (
             <Text style={styles.roleText}>{item.senderRole}</Text>
           )}
-          <Text style={isMe ? styles.bubbleTextMe : styles.bubbleTextThem}>{item.text}</Text>
+
+          {renderAttachment(item.attachment, isMe, item.id)}
+
+          {!!item.text && (
+            <Text style={isMe ? styles.bubbleTextMe : styles.bubbleTextThem}>{item.text}</Text>
+          )}
           <Text style={isMe ? styles.timeTextMe : styles.timeTextThem}>{item.time}</Text>
         </View>
       </View>
@@ -171,30 +443,170 @@ export default function ChatWindowScreen({ route, navigation }) {
           bounces={true}
         />
 
-        {/* Input Bar */}
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Type your orbital message..."
-            placeholderTextColor="#8a8a8a"
-            value={inputText}
-            onChangeText={setInputText}
-            multiline={false}
-          />
+        {/* Pending attachment preview (shown above input bar before sending) */}
+        {pendingAttachment && (
+          <View style={styles.pendingAttachmentBar}>
+            {pendingAttachment.type === 'image' ? (
+              <Image source={{ uri: pendingAttachment.uri }} style={styles.pendingImageThumb} />
+            ) : (
+              <View style={styles.pendingFileIcon}>
+                <Svg width={18} height={18} viewBox="0 0 24 24">
+                  <Path
+                    d="M6 2c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6H6zm7 7V3.5L18.5 9H13z"
+                    fill="#1b5674"
+                  />
+                </Svg>
+              </View>
+            )}
+            <Text numberOfLines={1} style={styles.pendingAttachmentName}>
+              {pendingAttachment.name}
+            </Text>
+            <TouchableOpacity onPress={removePendingAttachment} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Svg width={18} height={18} viewBox="0 0 24 24">
+                <Path
+                  d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"
+                  fill="#8a8a8a"
+                />
+              </Svg>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Recording-in-progress bar (replaces the normal input bar while recording) */}
+        {isRecording ? (
+          <View style={styles.recordingBar}>
+            <TouchableOpacity onPress={cancelRecording} style={styles.recordingCancelButton}>
+              <Svg width={20} height={20} viewBox="0 0 24 24">
+                <Path
+                  d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"
+                  fill="#c0392b"
+                />
+              </Svg>
+            </TouchableOpacity>
+
+            <View style={styles.recordingIndicatorRow}>
+              <View style={styles.recordingDot} />
+              <Text style={styles.recordingTimerText}>{formatDuration(recordingDuration)}</Text>
+              <Text style={styles.recordingHintText}>Recording voice message…</Text>
+            </View>
+
+            <TouchableOpacity onPress={finishRecording} style={styles.sendButton} activeOpacity={0.8}>
+              <Svg width={18} height={18} viewBox="0 0 24 24">
+                <Path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="#ffffff" />
+              </Svg>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          /* Input Bar */
+          <View style={styles.inputContainer}>
+            <TouchableOpacity
+              style={styles.attachButton}
+              onPress={() => setShowAttachMenu(true)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Svg width={22} height={22} viewBox="0 0 24 24">
+                <Path
+                  d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 0 1 5 0v10.5a1 1 0 0 1-2 0V6H10v9.5a2.5 2.5 0 0 0 5 0V5a4 4 0 0 0-8 0v12.5a5.5 5.5 0 0 0 11 0V6h-1.5z"
+                  fill="#1b5674"
+                />
+              </Svg>
+            </TouchableOpacity>
+
+            <TextInput
+              style={styles.input}
+              placeholder="Type your orbital message..."
+              placeholderTextColor="#8a8a8a"
+              value={inputText}
+              onChangeText={setInputText}
+              multiline={false}
+            />
+
+            {inputText.trim() || pendingAttachment ? (
+              <TouchableOpacity
+                style={styles.sendButton}
+                onPress={handleSendMessage}
+                activeOpacity={0.8}
+              >
+                <Svg width={18} height={18} viewBox="0 0 24 24">
+                  <Path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="#ffffff" />
+                </Svg>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.sendButton}
+                onPress={startRecording}
+                activeOpacity={0.8}
+              >
+                <Svg width={18} height={18} viewBox="0 0 24 24">
+                  <Path
+                    d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"
+                    fill="#ffffff"
+                  />
+                </Svg>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {/* Attach menu (choose Photo / Camera / Document) */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={showAttachMenu}
+          onRequestClose={() => setShowAttachMenu(false)}
+        >
           <TouchableOpacity
-            style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
-            onPress={handleSendMessage}
-            disabled={!inputText.trim()}
-            activeOpacity={0.8}
+            style={styles.attachMenuOverlay}
+            activeOpacity={1}
+            onPress={() => setShowAttachMenu(false)}
           >
-            <Svg width={18} height={18} viewBox="0 0 24 24">
-              <Path
-                d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"
-                fill="#ffffff"
-              />
-            </Svg>
+            <View style={styles.attachMenuSheet}>
+              <TouchableOpacity style={styles.attachMenuOption} onPress={pickImage}>
+                <View style={[styles.attachMenuIconWrap, { backgroundColor: '#de994a' }]}>
+                  <Svg width={20} height={20} viewBox="0 0 24 24">
+                    <Path
+                      d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"
+                      fill="#ffffff"
+                    />
+                  </Svg>
+                </View>
+                <Text style={styles.attachMenuLabel}>Photo Library</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.attachMenuOption} onPress={takePhoto}>
+                <View style={[styles.attachMenuIconWrap, { backgroundColor: '#1b5674' }]}>
+                  <Svg width={20} height={20} viewBox="0 0 24 24">
+                    <Path
+                      d="M9 2l-1.83 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"
+                      fill="#ffffff"
+                    />
+                  </Svg>
+                </View>
+                <Text style={styles.attachMenuLabel}>Camera</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.attachMenuOption} onPress={pickDocument}>
+                <View style={[styles.attachMenuIconWrap, { backgroundColor: '#6b7280' }]}>
+                  <Svg width={20} height={20} viewBox="0 0 24 24">
+                    <Path
+                      d="M6 2c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6H6zm7 7V3.5L18.5 9H13z"
+                      fill="#ffffff"
+                    />
+                  </Svg>
+                </View>
+                <Text style={styles.attachMenuLabel}>Document</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.attachMenuCancel}
+                onPress={() => setShowAttachMenu(false)}
+              >
+                <Text style={styles.attachMenuCancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
           </TouchableOpacity>
-        </View>
+        </Modal>
 
         {/* Department Info Modal */}
         {groupDetails && (
@@ -450,6 +862,91 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     marginTop: 4,
   },
+
+  // --- Attachment rendering inside bubbles ---
+  attachmentImage: {
+    width: 200,
+    height: 150,
+    borderRadius: 10,
+    marginBottom: 6,
+  },
+  fileAttachmentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginBottom: 6,
+    maxWidth: 220,
+  },
+  fileAttachmentName: {
+    fontSize: 13,
+    marginLeft: 8,
+    flexShrink: 1,
+  },
+  voiceAttachmentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minWidth: 180,
+    marginBottom: 4,
+  },
+  voicePlayButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  voiceWaveform: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    height: 20,
+  },
+  voiceWaveBar: {
+    width: 3,
+    borderRadius: 2,
+    marginRight: 3,
+  },
+  voiceDuration: {
+    fontSize: 11,
+    marginLeft: 8,
+  },
+
+  // --- Pending attachment preview bar (above input, before sending) ---
+  pendingAttachmentBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e5ea',
+  },
+  pendingImageThumb: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    marginRight: 10,
+  },
+  pendingFileIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#f1f1f3',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  pendingAttachmentName: {
+    flex: 1,
+    fontSize: 13,
+    color: '#333333',
+  },
+
+  // --- Input bar ---
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -459,6 +956,10 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#e5e5ea',
     paddingBottom: Platform.OS === 'ios' ? 25 : 10,
+  },
+  attachButton: {
+    marginRight: 8,
+    padding: 4,
   },
   input: {
     flex: 1,
@@ -481,7 +982,91 @@ const styles = StyleSheet.create({
   sendButtonDisabled: {
     opacity: 0.5,
   },
-  // Modal styles
+
+  // --- Recording bar (replaces input bar while recording) ---
+  recordingBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e5ea',
+    paddingBottom: Platform.OS === 'ios' ? 25 : 10,
+  },
+  recordingCancelButton: {
+    padding: 4,
+    marginRight: 10,
+  },
+  recordingIndicatorRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  recordingDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#c0392b',
+    marginRight: 8,
+  },
+  recordingTimerText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333333',
+    marginRight: 10,
+  },
+  recordingHintText: {
+    fontSize: 12,
+    color: '#8a8a8a',
+  },
+
+  // --- Attach menu (bottom sheet) ---
+  attachMenuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'flex-end',
+  },
+  attachMenuSheet: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 15,
+    paddingHorizontal: 20,
+    paddingBottom: Platform.OS === 'ios' ? 35 : 20,
+  },
+  attachMenuOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  attachMenuIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  attachMenuLabel: {
+    fontSize: 15,
+    color: '#333333',
+    fontWeight: '500',
+  },
+  attachMenuCancel: {
+    marginTop: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#f1f1f3',
+  },
+  attachMenuCancelText: {
+    fontSize: 15,
+    color: '#c0392b',
+    fontWeight: '600',
+  },
+
+  // --- Modal styles ---
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
