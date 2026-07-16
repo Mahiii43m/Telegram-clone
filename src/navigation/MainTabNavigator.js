@@ -1,46 +1,53 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 import HomeScreen from '../screens/home/HomeScreen';
+import ChatsListScreen from '../screens/home/ChatsListScreen';
 
 const Tab = createBottomTabNavigator();
 
-// Placeholder screens (you can replace these with real ones later)
+// Placeholder screens
 function CallsScreenPlaceholder() {
+  const { colors } = useTheme();
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
-      <Text style={{ fontSize: 20, color: '#666' }}>📞 Calls</Text>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+      <Text style={{ fontSize: 20, color: colors.text }}>📞 Calls</Text>
     </View>
   );
 }
 
 function ContactsScreenPlaceholder() {
+  const { colors } = useTheme();
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
-      <Text style={{ fontSize: 20, color: '#666' }}>👥 Contacts</Text>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+      <Text style={{ fontSize: 20, color: colors.text }}>👥 Contacts</Text>
     </View>
   );
 }
 
 function SettingsScreenPlaceholder() {
+  const { colors } = useTheme();
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
-      <Text style={{ fontSize: 20, color: '#666' }}>⚙️ Settings</Text>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+      <Text style={{ fontSize: 20, color: colors.text }}>⚙️ Settings</Text>
     </View>
   );
 }
 
 export default function MainTabNavigator() {
+  const { colors } = useTheme();
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#0088cc',
+        tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: '#999',
         tabBarStyle: {
-          backgroundColor: '#fff',
+          backgroundColor: colors.background,
           borderTopWidth: 1,
-          borderTopColor: '#e0e0e0',
+          borderTopColor: colors.border,
           height: 60,
           paddingBottom: 8,
           paddingTop: 8,
@@ -53,10 +60,10 @@ export default function MainTabNavigator() {
     >
       <Tab.Screen
         name="Chats"
-        component={HomeScreen}
+        component={ChatsListScreen}
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size, color }}>💬</Text>
+            <Ionicons name="chatbubbles" size={size} color={color} />
           ),
         }}
       />
@@ -65,7 +72,7 @@ export default function MainTabNavigator() {
         component={CallsScreenPlaceholder}
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size, color }}>📞</Text>
+            <Ionicons name="call" size={size} color={color} />
           ),
         }}
       />
@@ -74,7 +81,7 @@ export default function MainTabNavigator() {
         component={ContactsScreenPlaceholder}
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size, color }}>👥</Text>
+            <Ionicons name="people" size={size} color={color} />
           ),
         }}
       />
@@ -83,7 +90,7 @@ export default function MainTabNavigator() {
         component={SettingsScreenPlaceholder}
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size, color }}>⚙️</Text>
+            <Ionicons name="settings" size={size} color={color} />
           ),
         }}
       />

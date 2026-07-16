@@ -1,57 +1,84 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { useColorScheme } from 'react-native';
 
-// Define your color themes
-export const LightTheme = {
-  primary: '#FF6B35',
-  primaryDark: '#E85D2C',
-  background: '#FFFFFF',
-  surface: '#F5F5F5',
-  textPrimary: '#000000',
-  textSecondary: '#666666',
-  textMuted: '#999999',
-  border: '#E0E0E0',
-  shadow: 'rgba(0,0,0,0.1)',
-  statusBar: 'dark-content',
-};
-
-export const DarkTheme = {
-  primary: '#FF6B35',
-  primaryDark: '#E85D2C',
-  background: '#0A0A1A',
-  surface: 'rgba(255,255,255,0.08)',
-  textPrimary: '#FFFFFF',
-  textSecondary: 'rgba(255,255,255,0.7)',
-  textMuted: 'rgba(255,255,255,0.5)',
-  border: 'rgba(255,255,255,0.1)',
-  shadow: 'rgba(255,107,53,0.3)',
-  statusBar: 'light-content',
-};
-
-// Create the Context
 const ThemeContext = createContext();
 
-// Theme Provider Component
 export const ThemeProvider = ({ children }) => {
-  const [isDark, setIsDark] = useState(true); // Default to dark mode
+  const systemScheme = useColorScheme();
+  const [theme, setTheme] = useState('light');
+
+  useEffect(() => {
+    setTheme(systemScheme);
+  }, [systemScheme]);
 
   const toggleTheme = () => {
-    setIsDark(!isDark);
+    setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
-  const theme = isDark ? DarkTheme : LightTheme;
+  const colors = {
+    light: {
+      background: '#ffffff',
+      text: '#1a1a1a',
+      headerBg: '#1B5674',
+      headerText: '#ffffff',
+      searchBg: 'rgba(255,255,255,0.88)',
+      searchText: '#333333',
+      tabBg: 'transparent',
+      tabActiveBg: '#de994a',
+      tabText: '#4a3b1f',
+      tabActiveText: '#ffffff',
+      rowBg: '#ffffff',
+      rowText: '#111111',
+      rowPreview: '#666666',
+      rowTime: '#8a8a8a',
+      border: '#e0e0e0',
+      unreadBg: '#1b5674',
+      bottomBarBg: '#b6a378',
+      navCapsuleBg: '#ffffff',
+      navIconActive: '#1b5674',
+      navIconInactive: '#aaaaaa',
+      modalBg: '#ffffff',
+      modalText: '#111111',
+      primary: '#0088cc',
+    },
+    dark: {
+      background: '#121212',
+      text: '#e6e6e6',
+      headerBg: '#0a2a3a',
+      headerText: '#e6e6e6',
+      searchBg: '#2a2a2a',
+      searchText: '#e6e6e6',
+      tabBg: 'transparent',
+      tabActiveBg: '#de994a',
+      tabText: '#a0a0a0',
+      tabActiveText: '#ffffff',
+      rowBg: '#1e1e1e',
+      rowText: '#e6e6e6',
+      rowPreview: '#a0a0a0',
+      rowTime: '#8a8a8a',
+      border: '#333333',
+      unreadBg: '#0088cc',
+      bottomBarBg: '#1a1a1a',
+      navCapsuleBg: '#2a2a2a',
+      navIconActive: '#0088cc',
+      navIconInactive: '#666666',
+      modalBg: '#1e1e1e',
+      modalText: '#e6e6e6',
+      primary: '#0088cc',
+    },
+  };
+
+  const currentTheme = colors[theme] || colors.light;
 
   return (
-    <ThemeContext.Provider value={{ theme, isDark, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, colors: currentTheme }}>
       {children}
     </ThemeContext.Provider>
   );
 };
 
-// Custom hook to use the theme
 export const useTheme = () => {
   const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
+  if (!context) throw new Error('useTheme must be used within a ThemeProvider');
   return context;
 };

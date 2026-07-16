@@ -11,8 +11,8 @@ export const LightTheme = {
 
 export const DarkTheme = {
   primary: '#0088cc',
-  background: '#0e1621',
-  surface: '#17212b',
+  background: '#e33636',
+  surface: '#181d23',
   bubbleIncoming: '#182533',
   bubbleOutgoing: '#0088cc',
   textPrimary: '#ffffff',
