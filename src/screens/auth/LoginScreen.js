@@ -231,16 +231,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
   },
-  hillContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    width: '100%',
-    backgroundColor: '#DD984B',
-    borderTopLeftRadius: height * 0.92,
-    borderTopRightRadius: height * 0.92,
-  },
+hillContainer: {
+  position: 'absolute',
+  bottom: 0,
+  left: 0,
+  right: 0,
+  width: '100%',
+  height: height * 0.53,  // ✅ ADD THIS
+  backgroundColor: '#DD984B',
+  borderTopLeftRadius: height * 0.92,
+  borderTopRightRadius: height * 0.92,
+},
   contentWrapper: {
     flex: 1,
     paddingHorizontal: 32,
