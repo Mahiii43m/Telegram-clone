@@ -20,8 +20,7 @@ import { useAuth } from '../../context/AuthContext';
 const { width, height } = Dimensions.get('window');
 
 export default function LoginScreen({ navigation }) {
-  // Use your existing signIn from AuthContext
-  const { signIn } = useAuth();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -75,24 +74,26 @@ export default function LoginScreen({ navigation }) {
     setError('');
 
     try {
-      await signIn(email, password);
-      navigation.navigate('Main');
+      await login({
+        email,
+        name: email.split('@')[0],
+      });
+      // Navigation happens automatically via AppNavigator when user state changes
     } catch (err) {
-      setError(err.message || 'Login failed. Please try again.');
+      const message = err?.message?.includes('cancel')
+        ? 'Google sign-in was cancelled.'
+        : 'Google sign-in failed. Please try again.';
+      setError(message);
       setLoading(false);
     }
   };
 
-  // ✅ Placeholder for Google sign‑in – you can implement later
   const handleGoogleSignIn = async () => {
     setLoading(true);
     setError('');
+
     try {
-      // If you have signInWithGoogle in your AuthContext, call it here.
-      // For now, we'll show an alert or just simulate.
-      // await signInWithGoogle();
-      setError('Google sign‑in coming soon!');
-      setLoading(false);
+      await signInWithGoogle();
     } catch (err) {
       const message = err?.message?.includes('cancel')
         ? 'Google sign-in was cancelled.'
@@ -217,6 +218,19 @@ export default function LoginScreen({ navigation }) {
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
                 <Text style={styles.buttonText}>SIGN IN</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.googleButton, loading && styles.buttonDisabled]}
+              onPress={handleGoogleSignIn}
+              disabled={loading}
+              activeOpacity={0.7}
+            >
+              {loading ? (
+                <ActivityIndicator color="#1B5674" size="small" />
+              ) : (
+                <Text style={styles.googleButtonText}>CONTINUE WITH GOOGLE</Text>
               )}
             </TouchableOpacity>
 
