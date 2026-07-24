@@ -14,6 +14,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import { db, auth } from '../../firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 const { width, height } = Dimensions.get('window');
 
@@ -64,7 +66,19 @@ export default function SignUpScreen({ navigation }) {
     setLoading(true);
     setError('');
     try {
+      // 1. Sign up with Firebase Auth
       await signUp(email, password);
+      // 2. Get the current user
+      const user = auth.currentUser;
+      if (user) {
+        // 3. Save user profile to Firestore
+        await setDoc(doc(db, 'users', user.uid), {
+          fullName: fullName,
+          email: email,
+          createdAt: new Date().toISOString(),
+        });
+      }
+      // 4. Navigate to Login
       navigation.navigate('Login');
     } catch (error) {
       setError(error.message);
@@ -216,7 +230,7 @@ const styles = StyleSheet.create({
     right: 0,
     width: '100%',
     height: height * 0.52,
-    backgroundColor: '#FF6B35',
+    backgroundColor: '#d8c9c4',
     borderTopLeftRadius: height * 0.42,
     borderTopRightRadius: height * 0.42,
   },
