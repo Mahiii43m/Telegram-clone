@@ -20,7 +20,7 @@ import { useAuth } from '../../context/AuthContext';
 const { width, height } = Dimensions.get('window');
 
 export default function LoginScreen({ navigation }) {
-  const { login } = useAuth();
+  const { login, signInWithGoogle } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -73,13 +73,24 @@ export default function LoginScreen({ navigation }) {
     setError('');
 
     try {
-      await login({
-        email,
-        name: email.split('@')[0],
-      });
-      // Navigation happens automatically via AppNavigator when user state changes
+      await login(email, password);
     } catch (err) {
       setError('Login failed. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      await signInWithGoogle();
+    } catch (err) {
+      const message = err?.message?.includes('cancel')
+        ? 'Google sign-in was cancelled.'
+        : 'Google sign-in failed. Please try again.';
+      setError(message);
       setLoading(false);
     }
   };
@@ -153,7 +164,7 @@ export default function LoginScreen({ navigation }) {
               <Text style={styles.inputLabel}>EMAIL</Text>
               <TextInput
                 style={[styles.input, error ? styles.inputError : null]}
-                placeholder="yourname@ssgi.gov.et"
+                placeholder="yourname@gmail.com"
                 placeholderTextColor="rgba(0,0,0,0.35)"
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -202,6 +213,19 @@ export default function LoginScreen({ navigation }) {
               )}
             </TouchableOpacity>
 
+            <TouchableOpacity
+              style={[styles.googleButton, loading && styles.buttonDisabled]}
+              onPress={handleGoogleSignIn}
+              disabled={loading}
+              activeOpacity={0.7}
+            >
+              {loading ? (
+                <ActivityIndicator color="#1B5674" size="small" />
+              ) : (
+                <Text style={styles.googleButtonText}>CONTINUE WITH GOOGLE</Text>
+              )}
+            </TouchableOpacity>
+
             {/* ===== SIGN UP OPTION ===== */}
             <View style={styles.signUpContainer}>
               <Text style={styles.signUpText}>Don't have an account?</Text>
@@ -216,7 +240,7 @@ export default function LoginScreen({ navigation }) {
             {/* Footer */}
             <View style={styles.footer}>
               <Text style={styles.footerText}>
-                Please use your institutional email
+                Use your Google account or email and password
               </Text>
             </View>
           </ScrollView>
@@ -378,6 +402,16 @@ hillContainer: {
     elevation: 4,
     marginTop: 8,
   },
+  googleButton: {
+    height: 56,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#D0D7DE',
+    marginTop: 12,
+  },
   buttonDisabled: {
     opacity: 0.5,
     elevation: 0,
@@ -387,6 +421,12 @@ hillContainer: {
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 2,
+  },
+  googleButtonText: {
+    color: '#1B5674',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 1.2,
   },
   footer: {
     marginTop: 24,

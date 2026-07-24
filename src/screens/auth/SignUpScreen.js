@@ -14,10 +14,12 @@ import {
   ScrollView,
 } from 'react-native';
 import LogoSVG from '../../assets/images/logo.svg';
+import { useAuth } from '../../context/AuthContext';
 
 const { width, height } = Dimensions.get('window');
 
 export default function SignUpScreen({ navigation }) {
+  const { signUp } = useAuth();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -44,17 +46,13 @@ export default function SignUpScreen({ navigation }) {
     ]).start();
   }, []);
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     if (!fullName.trim()) {
       setError('Please enter your full name');
       return;
     }
     if (!email.trim() || !email.includes('@') || !email.includes('.')) {
       setError('Please enter a valid email address');
-      return;
-    }
-    if (!email.toLowerCase().endsWith('@ssgi.gov.et')) {
-      setError('Email must be @ssgi.gov.et');
       return;
     }
     if (password.length < 6) {
@@ -67,10 +65,20 @@ export default function SignUpScreen({ navigation }) {
     }
 
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    setError('');
+
+    try {
+      await signUp(fullName, '', email, password);
       navigation.navigate('Login');
-    }, 2000);
+    } catch (err) {
+      const message = err?.code === 'auth/email-already-in-use'
+        ? 'An account already exists with this email.'
+        : err?.code === 'auth/weak-password'
+          ? 'Password should be at least 6 characters.'
+          : 'Sign up failed. Please try again.';
+      setError(message);
+      setLoading(false);
+    }
   };
 
   return (
@@ -131,7 +139,7 @@ export default function SignUpScreen({ navigation }) {
                 <Text style={styles.inputLabel}>EMAIL</Text>
                 <TextInput
                   style={[styles.input, error && styles.inputError]}
-                  placeholder="yourname@ssgi.gov.et"
+                  placeholder="yourname@gmail.com"
                   placeholderTextColor="rgba(255,255,255,0.35)"
                   keyboardType="email-address"
                   autoCapitalize="none"
