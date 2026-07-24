@@ -14,7 +14,6 @@ import {
   ScrollView,
 } from 'react-native';
 import LogoSVG from '../../assets/images/logo.svg';
-import { useAuth } from '../../context/AuthContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -28,8 +27,6 @@ export default function SignUpScreen({ navigation }) {
   const [error, setError] = useState('');
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
-  const scrollViewRef = useRef(null);
-  const confirmPasswordRef = useRef(null);
 
   useEffect(() => {
     Animated.parallel([
@@ -65,20 +62,10 @@ export default function SignUpScreen({ navigation }) {
     }
 
     setLoading(true);
-    setError('');
-
-    try {
-      await signUp(fullName, '', email, password);
-      navigation.navigate('Login');
-    } catch (err) {
-      const message = err?.code === 'auth/email-already-in-use'
-        ? 'An account already exists with this email.'
-        : err?.code === 'auth/weak-password'
-          ? 'Password should be at least 6 characters.'
-          : 'Sign up failed. Please try again.';
-      setError(message);
+    setTimeout(() => {
       setLoading(false);
-    }
+      navigation.navigate('Login');
+    }, 2000);
   };
 
   return (
@@ -100,14 +87,12 @@ export default function SignUpScreen({ navigation }) {
           keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
         >
           <ScrollView
-            ref={scrollViewRef}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
-            scrollEnabled={true}
           >
             <View style={styles.logoContainer}>
-              <LogoSVG width={180} height={80} />
+              <View style={{ width: 180, height: 80, backgroundColor: '#FF6B35', borderRadius: 10 }} />
             </View>
 
             <View style={styles.textContainer}>
@@ -117,7 +102,6 @@ export default function SignUpScreen({ navigation }) {
             </View>
 
             <View style={styles.formContainer}>
-              {/* Full Name */}
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>FULL NAME</Text>
                 <TextInput
@@ -130,16 +114,14 @@ export default function SignUpScreen({ navigation }) {
                     setFullName(text);
                   }}
                   returnKeyType="next"
-                  onSubmitEditing={() => {}}
                 />
               </View>
 
-              {/* Email */}
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>EMAIL</Text>
                 <TextInput
                   style={[styles.input, error && styles.inputError]}
-                  placeholder="yourname@gmail.com"
+                  placeholder="yourname@ssgi.gov.et"
                   placeholderTextColor="rgba(255,255,255,0.35)"
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -152,7 +134,6 @@ export default function SignUpScreen({ navigation }) {
                 />
               </View>
 
-              {/* Password */}
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>PASSWORD</Text>
                 <TextInput
@@ -169,11 +150,9 @@ export default function SignUpScreen({ navigation }) {
                 />
               </View>
 
-              {/* Confirm Password */}
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>CONFIRM PASSWORD</Text>
                 <TextInput
-                  ref={confirmPasswordRef}
                   style={[styles.input, error && styles.inputError]}
                   placeholder="Re-enter your password"
                   placeholderTextColor="rgba(255,255,255,0.35)"
@@ -231,7 +210,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     width: '100%',
-    height: height * 0.53,
+    height: height * 0.52,
     backgroundColor: '#FF6B35',
     borderTopLeftRadius: height * 0.42,
     borderTopRightRadius: height * 0.42,

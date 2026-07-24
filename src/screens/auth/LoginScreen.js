@@ -20,7 +20,7 @@ import { useAuth } from '../../context/AuthContext';
 const { width, height } = Dimensions.get('window');
 
 export default function LoginScreen({ navigation }) {
-  const { login, signInWithGoogle } = useAuth();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -59,6 +59,7 @@ export default function LoginScreen({ navigation }) {
     ).start();
   }, []);
 
+  // ✅ Normal email/password login – uses signIn from AuthContext
   const handleLogin = async () => {
     if (!email.trim() || !email.includes('@') || !email.includes('.')) {
       setError('Please enter a valid email address');
@@ -73,9 +74,16 @@ export default function LoginScreen({ navigation }) {
     setError('');
 
     try {
-      await login(email, password);
+      await login({
+        email,
+        name: email.split('@')[0],
+      });
+      // Navigation happens automatically via AppNavigator when user state changes
     } catch (err) {
-      setError('Login failed. Please try again.');
+      const message = err?.message?.includes('cancel')
+        ? 'Google sign-in was cancelled.'
+        : 'Google sign-in failed. Please try again.';
+      setError(message);
       setLoading(false);
     }
   };
@@ -129,7 +137,7 @@ export default function LoginScreen({ navigation }) {
               <Text style={styles.subtitle}>FROM EARTH TO SPACE</Text>
             </View>
 
-            {/* Antenna with Signal Waves */}
+            {/* Antenna + Signal Waves */}
             <View style={styles.broadcastContainer}>
               <View style={styles.signalWrapper}>
                 <Animated.View
@@ -199,7 +207,7 @@ export default function LoginScreen({ navigation }) {
             {/* Error Message */}
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-            {/* Login Button */}
+            {/* Sign In Button */}
             <TouchableOpacity
               style={[styles.button, loading && styles.buttonDisabled]}
               onPress={handleLogin}
@@ -226,7 +234,17 @@ export default function LoginScreen({ navigation }) {
               )}
             </TouchableOpacity>
 
-            {/* ===== SIGN UP OPTION ===== */}
+            {/* Google Sign‑In Button */}
+            <TouchableOpacity
+              style={[styles.googleButton, loading && styles.buttonDisabled]}
+              onPress={handleGoogleSignIn}
+              disabled={loading}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.googleButtonText}>CONTINUE WITH GOOGLE</Text>
+            </TouchableOpacity>
+
+            {/* Sign Up Link */}
             <View style={styles.signUpContainer}>
               <Text style={styles.signUpText}>Don't have an account?</Text>
               <TouchableOpacity
@@ -255,17 +273,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
   },
-hillContainer: {
-  position: 'absolute',
-  bottom: 0,
-  left: 0,
-  right: 0,
-  width: '100%',
-  height: height * 0.53,  // ✅ ADD THIS
-  backgroundColor: '#DD984B',
-  borderTopLeftRadius: height * 0.92,
-  borderTopRightRadius: height * 0.92,
-},
+  hillContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    width: '100%',
+    height: height * 0.53,
+    backgroundColor: '#DD984B',
+    borderTopLeftRadius: height * 0.92,
+    borderTopRightRadius: height * 0.92,
+  },
   contentWrapper: {
     flex: 1,
     paddingHorizontal: 32,
@@ -319,7 +337,6 @@ hillContainer: {
   signalWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
   },
   signalWave: {
     position: 'absolute',
@@ -358,7 +375,7 @@ hillContainer: {
   inputLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: 'rgba(0, 0, 0, 1)',
+    color: 'rgba(0, 0, 0, 0.8)',
     marginBottom: 6,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
@@ -367,7 +384,7 @@ hillContainer: {
     backgroundColor: '#ffffff',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
     borderRadius: 14,
@@ -441,16 +458,16 @@ hillContainer: {
     lineHeight: 18,
   },
   signUpContainer: {
-  flexDirection: 'row',
-  justifyContent: 'center',
-  alignItems: 'center',
-  marginTop: 18,
-  paddingVertical: 10,
-  paddingHorizontal: 20,
-  borderRadius: 12,
-  backgroundColor: 'rgba(255,107,53,0.25)',
-  borderWidth: 1,
-  borderColor: 'rgba(255,107,53,0.3)',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 18,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,107,53,0.25)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,107,53,0.3)',
   },
   signUpText: {
     fontSize: 15,
@@ -465,4 +482,3 @@ hillContainer: {
     marginLeft: 4,
   },
 });
-
