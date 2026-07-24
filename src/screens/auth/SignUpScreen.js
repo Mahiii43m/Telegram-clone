@@ -13,11 +13,12 @@ import {
   Animated,
   ScrollView,
 } from 'react-native';
-import LogoSVG from '../../assets/images/logo.svg';
+import { useAuth } from '../../context/AuthContext';
 
 const { width, height } = Dimensions.get('window');
 
 export default function SignUpScreen({ navigation }) {
+  const { signUp } = useAuth();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,8 +27,6 @@ export default function SignUpScreen({ navigation }) {
   const [error, setError] = useState('');
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
-  const scrollViewRef = useRef(null);
-  const confirmPasswordRef = useRef(null);
 
   useEffect(() => {
     Animated.parallel([
@@ -44,17 +43,13 @@ export default function SignUpScreen({ navigation }) {
     ]).start();
   }, []);
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     if (!fullName.trim()) {
       setError('Please enter your full name');
       return;
     }
     if (!email.trim() || !email.includes('@') || !email.includes('.')) {
       setError('Please enter a valid email address');
-      return;
-    }
-    if (!email.toLowerCase().endsWith('@ssgi.gov.et')) {
-      setError('Email must be @ssgi.gov.et');
       return;
     }
     if (password.length < 6) {
@@ -67,10 +62,15 @@ export default function SignUpScreen({ navigation }) {
     }
 
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    setError('');
+    try {
+      await signUp(email, password);
       navigation.navigate('Login');
-    }, 2000);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -92,14 +92,12 @@ export default function SignUpScreen({ navigation }) {
           keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
         >
           <ScrollView
-            ref={scrollViewRef}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
-            scrollEnabled={true}
           >
             <View style={styles.logoContainer}>
-              <LogoSVG width={180} height={80} />
+              <View style={{ width: 180, height: 80, backgroundColor: '#FF6B35', borderRadius: 10 }} />
             </View>
 
             <View style={styles.textContainer}>
@@ -109,7 +107,6 @@ export default function SignUpScreen({ navigation }) {
             </View>
 
             <View style={styles.formContainer}>
-              {/* Full Name */}
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>FULL NAME</Text>
                 <TextInput
@@ -122,16 +119,14 @@ export default function SignUpScreen({ navigation }) {
                     setFullName(text);
                   }}
                   returnKeyType="next"
-                  onSubmitEditing={() => {}}
                 />
               </View>
 
-              {/* Email */}
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>EMAIL</Text>
                 <TextInput
                   style={[styles.input, error && styles.inputError]}
-                  placeholder="yourname@ssgi.gov.et"
+                  placeholder="your@email.com"
                   placeholderTextColor="rgba(255,255,255,0.35)"
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -144,7 +139,6 @@ export default function SignUpScreen({ navigation }) {
                 />
               </View>
 
-              {/* Password */}
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>PASSWORD</Text>
                 <TextInput
@@ -161,11 +155,9 @@ export default function SignUpScreen({ navigation }) {
                 />
               </View>
 
-              {/* Confirm Password */}
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>CONFIRM PASSWORD</Text>
                 <TextInput
-                  ref={confirmPasswordRef}
                   style={[styles.input, error && styles.inputError]}
                   placeholder="Re-enter your password"
                   placeholderTextColor="rgba(255,255,255,0.35)"
@@ -223,7 +215,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     width: '100%',
-    height: height * 0.53,
+    height: height * 0.52,
     backgroundColor: '#FF6B35',
     borderTopLeftRadius: height * 0.42,
     borderTopRightRadius: height * 0.42,
