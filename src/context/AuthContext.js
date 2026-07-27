@@ -3,10 +3,21 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
+export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Google Auth Request
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    androidClientId: '1:901982597632:android:69ea91f9cf21b0c5c49ee5',
+    iosClientId: '1:901982597632:web:22dcc3a54e3e5615c49ee5',
+    webClientId: '1:901982597632:web:22dcc3a54e3e5615c49ee5',
+    redirectUri: makeRedirectUri({
+      scheme: 'orbitchat',
+    }),
+  });
+
+  // ─── Listen to Firebase Auth State ──────────────────────────────
   useEffect(() => {
     checkUser();
   }, []);
@@ -46,12 +57,6 @@ export const AuthProvider = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export const useAuth = () => useContext(AuthContext);

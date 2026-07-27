@@ -5,7 +5,9 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
+    "scheme": "orbitchat",
     "userInterfaceStyle": "light",
+    
     "ios": {
       "supportsTablet": true
     },
@@ -22,8 +24,12 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+<<<<<<< HEAD
       "expo-asset",
       "expo-video"
+=======
+      "@react-native-google-signin/google-signin"
+>>>>>>> 46d6b04fb8fd0ba5bf7e6a78cdc32d044734654b
     ]
   }
 }
