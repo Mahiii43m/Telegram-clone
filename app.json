@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "telegram-clone",
-    "slug": "telegram-clone",
+    "slug": "orbit-chat",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -20,6 +20,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "80b8572c-8cb0-4718-9bab-1ef552c72f9b"
+      }
+    },
+    "owner": "mahlet12s-team"
   }
 }
