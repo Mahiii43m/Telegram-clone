@@ -216,7 +216,7 @@ export default function LoginScreen({ navigation }) {
             {/* Footer */}
             <View style={styles.footer}>
               <Text style={styles.footerText}>
-                Please use your institutional email
+                
               </Text>
             </View>
           </ScrollView>

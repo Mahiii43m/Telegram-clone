@@ -13,21 +13,42 @@ import {
   Animated,
   ScrollView,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../../context/AuthContext';
+import { getAuth, signOut } from 'firebase/auth';
+import { db } from '../../firebase';
+import { doc, setDoc } from 'firebase/firestore';
 import LogoSVG from '../../assets/images/logo.svg';
 
 const { width, height } = Dimensions.get('window');
 
-export default function SignUpScreen({ navigation }) {
+export default function SignUpScreen() {
+  const navigation = useNavigation();
+  const { signUp } = useAuth();
+
+  // ── Form states ──────────────────────────────────────────────
   const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // ── Eye toggles ──────────────────────────────────────────────
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // ── Animations ────────────────────────────────────────────────
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
-  const scrollViewRef = useRef(null);
-  const confirmPasswordRef = useRef(null);
+
+  // ── Password requirement states ──────────────────────────────
+  const [meetsLength, setMeetsLength] = useState(false);
+  const [meetsLowercase, setMeetsLowercase] = useState(false);
+  const [meetsUppercase, setMeetsUppercase] = useState(false);
+  const [meetsSpecialChar, setMeetsSpecialChar] = useState(false);
 
   useEffect(() => {
     Animated.parallel([
@@ -44,34 +65,102 @@ export default function SignUpScreen({ navigation }) {
     ]).start();
   }, []);
 
-  const handleSignUp = () => {
+  // ─── Password checker ──────────────────────────────────────────
+  const checkPasswordRequirements = (text) => {
+    setPassword(text);
+    setMeetsLength(text.length >= 12);
+    setMeetsLowercase(/[a-z]/.test(text));
+    setMeetsUppercase(/[A-Z]/.test(text));
+    setMeetsSpecialChar(/[^A-Za-z0-9]/.test(text));
+  };
+
+  const validatePassword = (password) => {
+    if (password.length < 12) return 'Password must be at least 12 characters long.';
+    if (!/[a-z]/.test(password)) return 'Password must contain at least one lowercase letter.';
+    if (!/[A-Z]/.test(password)) return 'Password must contain at least one uppercase letter.';
+    if (!/[^A-Za-z0-9]/.test(password))
+      return 'Password must contain at least one special character (e.g., !@#$%).';
+    return null;
+  };
+
+  // ─── Sign‑up handler (with console logs) ──────────────────────
+  const handleSignUp = async () => {
+    const trimmedEmail = email.trim();
+
     if (!fullName.trim()) {
       setError('Please enter your full name');
       return;
     }
-    if (!email.trim() || !email.includes('@') || !email.includes('.')) {
+    if (!phone.trim() || phone.length < 10) {
+      setError('Please enter a valid phone number (min 10 digits)');
+      return;
+    }
+    if (!trimmedEmail || !trimmedEmail.includes('@') || !trimmedEmail.includes('.')) {
       setError('Please enter a valid email address');
       return;
     }
-    if (!email.toLowerCase().endsWith('@ssgi.gov.et')) {
-      setError('Email must be @ssgi.gov.et');
+
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
+
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
 
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    setError('');
+
+    try {
+      console.log('1. Signing up...');
+      const userCredential = await signUp(trimmedEmail, password);
+      const user = userCredential.user;
+      console.log('2. User UID:', user.uid);
+
+      console.log('3. Saving to Firestore...');
+      await setDoc(doc(db, 'users', user.uid), {
+        fullName: fullName.trim(),
+        phone: phone.trim(),
+        email: trimmedEmail,
+        createdAt: new Date().toISOString(),
+      });
+      console.log('4. Firestore save successful!');
+
+      // Sign out so user goes to Login screen
+      const auth = getAuth();
+      await signOut(auth);
+      console.log('5. Signed out, navigating to Login');
       navigation.navigate('Login');
-    }, 2000);
+    } catch (error) {
+      console.error('Error during sign-up:', error);
+      if (error.code === 'auth/email-already-in-use') {
+        setError('This email is already registered. Please sign in.');
+      } else if (error.code === 'auth/weak-password') {
+        setError('Password is too weak. Please meet all the requirements above.');
+      } else if (error.code === 'auth/invalid-email') {
+        setError('Invalid email address. Please check the format (e.g., example@gmail.com).');
+      } else {
+        setError(error.message || 'Sign up failed. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // ─── RequirementItem ──────────────────────────────────────────
+  const RequirementItem = ({ met, text }) => (
+    <View style={styles.requirementRow}>
+      <Text style={[styles.requirementBullet, met ? styles.bulletMet : styles.bulletNotMet]}>
+        {met ? '✓' : '*'}
+      </Text>
+      <Text style={[styles.requirementText, met ? styles.textMet : styles.textNotMet]}>
+        {text}
+      </Text>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
@@ -92,14 +181,12 @@ export default function SignUpScreen({ navigation }) {
           keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
         >
           <ScrollView
-            ref={scrollViewRef}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
-            scrollEnabled={true}
           >
             <View style={styles.logoContainer}>
-              <LogoSVG width={180} height={80} />
+              <LogoSVG width={200} height={90} />
             </View>
 
             <View style={styles.textContainer}>
@@ -109,7 +196,7 @@ export default function SignUpScreen({ navigation }) {
             </View>
 
             <View style={styles.formContainer}>
-              {/* Full Name */}
+              {/* FULL NAME */}
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>FULL NAME</Text>
                 <TextInput
@@ -122,16 +209,32 @@ export default function SignUpScreen({ navigation }) {
                     setFullName(text);
                   }}
                   returnKeyType="next"
-                  onSubmitEditing={() => {}}
                 />
               </View>
 
-              {/* Email */}
+              {/* PHONE */}
+              <View style={styles.inputWrapper}>
+                <Text style={styles.inputLabel}>PHONE NUMBER</Text>
+                <TextInput
+                  style={[styles.input, error && styles.inputError]}
+                  placeholder="Enter your phone number"
+                  placeholderTextColor="rgba(255,255,255,0.35)"
+                  keyboardType="phone-pad"
+                  value={phone}
+                  onChangeText={(text) => {
+                    setError('');
+                    setPhone(text);
+                  }}
+                  returnKeyType="next"
+                />
+              </View>
+
+              {/* EMAIL */}
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>EMAIL</Text>
                 <TextInput
                   style={[styles.input, error && styles.inputError]}
-                  placeholder="yourname@ssgi.gov.et"
+                  placeholder="example@gmail.com"
                   placeholderTextColor="rgba(255,255,255,0.35)"
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -144,40 +247,69 @@ export default function SignUpScreen({ navigation }) {
                 />
               </View>
 
-              {/* Password */}
+              {/* PASSWORD */}
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>PASSWORD</Text>
-                <TextInput
-                  style={[styles.input, error && styles.inputError]}
-                  placeholder="Min 6 characters"
-                  placeholderTextColor="rgba(255,255,255,0.35)"
-                  secureTextEntry
-                  value={password}
-                  onChangeText={(text) => {
-                    setError('');
-                    setPassword(text);
-                  }}
-                  returnKeyType="next"
-                />
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={[styles.input, styles.passwordInput, error && styles.inputError]}
+                    placeholder="Enter your password"
+                    placeholderTextColor="rgba(255,255,255,0.35)"
+                    secureTextEntry={!showPassword}
+                    value={password}
+                    onChangeText={checkPasswordRequirements}
+                    returnKeyType="next"
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeButton}
+                    onPress={() => setShowPassword(!showPassword)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={showPassword ? 'eye' : 'eye-off'}
+                      size={24}
+                      color="rgba(255,255,255,0.5)"
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
 
-              {/* Confirm Password */}
+              {/* PASSWORD REQUIREMENTS */}
+              <View style={styles.requirementsContainer}>
+                <RequirementItem met={meetsLength} text="At least 12 characters" />
+                <RequirementItem met={meetsLowercase} text="At least one lowercase and uppercase letter" />
+                <RequirementItem met={meetsSpecialChar} text="At least one special character" />
+              </View>
+
+              {/* CONFIRM PASSWORD */}
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>CONFIRM PASSWORD</Text>
-                <TextInput
-                  ref={confirmPasswordRef}
-                  style={[styles.input, error && styles.inputError]}
-                  placeholder="Re-enter your password"
-                  placeholderTextColor="rgba(255,255,255,0.35)"
-                  secureTextEntry
-                  value={confirmPassword}
-                  onChangeText={(text) => {
-                    setError('');
-                    setConfirmPassword(text);
-                  }}
-                  returnKeyType="done"
-                  onSubmitEditing={handleSignUp}
-                />
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={[styles.input, styles.passwordInput, error && styles.inputError]}
+                    placeholder="Re-enter your password"
+                    placeholderTextColor="rgba(255,255,255,0.35)"
+                    secureTextEntry={!showConfirmPassword}
+                    value={confirmPassword}
+                    onChangeText={(text) => {
+                      setError('');
+                      setConfirmPassword(text);
+                    }}
+                    returnKeyType="done"
+                    onSubmitEditing={handleSignUp}
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeButton}
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={showConfirmPassword ? 'eye' : 'eye-off'}
+                      size={24}
+                      color="rgba(255,255,255,0.5)"
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
 
               {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -196,6 +328,7 @@ export default function SignUpScreen({ navigation }) {
               )}
             </TouchableOpacity>
 
+            {/* SIGN IN LINK */}
             <View style={styles.footer}>
               <TouchableOpacity
                 style={styles.signInRow}
@@ -223,8 +356,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     width: '100%',
-    height: height * 0.53,
-    backgroundColor: '#FF6B35',
+    height: height * 0.52,
+    backgroundColor: '#74351e',
     borderTopLeftRadius: height * 0.42,
     borderTopRightRadius: height * 0.42,
   },
@@ -297,6 +430,52 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderColor: '#FF6B6B',
+  },
+  passwordContainer: {
+    position: 'relative',
+    width: '100%',
+  },
+  passwordInput: {
+    paddingRight: 50,
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: 14,
+    top: 14,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  requirementsContainer: {
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  requirementRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 2,
+  },
+  requirementBullet: {
+    fontSize: 14,
+    marginRight: 10,
+    width: 16,
+  },
+  bulletMet: {
+    color: '#4CAF50',
+  },
+  bulletNotMet: {
+    color: '#FF6B6B',
+  },
+  requirementText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.3)',
+  },
+  textMet: {
+    color: '#4CAF50',
+  },
+  textNotMet: {
+    color: '#FF6B6B',
   },
   errorText: {
     color: '#FF6B6B',
