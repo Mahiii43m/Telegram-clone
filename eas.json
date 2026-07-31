@@ -9,7 +9,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_USE_YARN": "true"
+        "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
       }
     }
   }
