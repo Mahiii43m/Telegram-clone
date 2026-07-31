@@ -25,7 +25,7 @@ const { width, height } = Dimensions.get('window');
 
 export default function SignUpScreen() {
   const navigation = useNavigation();
-  const { signUp } = useAuth();
+  const { signup } = useAuth(); // ✅ FIXED: lowercase "signup"
 
   // ── Form states ──────────────────────────────────────────────
   const [fullName, setFullName] = useState('');
@@ -116,7 +116,7 @@ export default function SignUpScreen() {
 
     try {
       console.log('1. Signing up...');
-      const userCredential = await signUp(trimmedEmail, password);
+      const userCredential = await signup(trimmedEmail, password); // ✅ FIXED: lowercase
       const user = userCredential.user;
       console.log('2. User UID:', user.uid);
 

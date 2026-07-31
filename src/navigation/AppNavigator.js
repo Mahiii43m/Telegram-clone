@@ -1,9 +1,11 @@
+// src/navigation/AppNavigator.js
 import React from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import LoginScreen from '../screens/auth/LoginScreen';
-import SignUpScreen from '../screens/auth/SignUpScreen';  // ✅ Already imported
+import SignUpScreen from '../screens/auth/SignUpScreen';
+import Dashboard from '../screens/Dashboard';                 // ✅ NEW
 import ChatsListScreen from '../screens/home/ChatsListScreen';
 import ChatWindowScreen from '../screens/chat/ChatWindowScreen';
 
@@ -23,14 +25,15 @@ export default function AppNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {!user ? (
-        // ✅ Not logged in — show Login AND SignUp screens
+        // Not logged in → Login/SignUp
         <>
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="SignUp" component={SignUpScreen} />
         </>
       ) : (
-        // ✅ Logged in — show main app screens
+        // Logged in → Dashboard is now the first screen
         <>
+          <Stack.Screen name="Dashboard" component={Dashboard} />
           <Stack.Screen name="ChatsList" component={ChatsListScreen} />
           <Stack.Screen name="ChatWindow" component={ChatWindowScreen} />
         </>
