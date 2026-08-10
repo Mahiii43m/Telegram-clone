@@ -13,7 +13,9 @@ import {
   Animated,
   ScrollView,
 } from 'react-native';
-import LogoSVG from '../../assets/images/logo.svg';
+import { useAuth } from '../../context/AuthContext';
+import { db, auth } from '../../firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 const { width, height } = Dimensions.get('window');
 
@@ -112,8 +114,21 @@ export default function SignUpScreen({ navigation }) {
         }
 
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    setError('');
+    try {
+      // 1. Sign up with Firebase Auth
+      await signUp(email, password);
+      // 2. Get the current user
+      const user = auth.currentUser;
+      if (user) {
+        // 3. Save user profile to Firestore
+        await setDoc(doc(db, 'users', user.uid), {
+          fullName: fullName,
+          email: email,
+          createdAt: new Date().toISOString(),
+        });
+      }
+      // 4. Navigate to Login
       navigation.navigate('Login');
     }, 2000);
   };
