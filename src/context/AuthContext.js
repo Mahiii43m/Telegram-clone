@@ -1,5 +1,12 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useState, useEffect, useContext } from 'react';
+import { auth, db } from '../firebase'; // Make sure db is imported
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+} from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 const AuthContext = createContext();
 
@@ -7,57 +14,47 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Google Auth Request
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    androidClientId: '1:901982597632:android:69ea91f9cf21b0c5c49ee5',
-    iosClientId: '1:901982597632:web:22dcc3a54e3e5615c49ee5',
-    webClientId: '1:901982597632:web:22dcc3a54e3e5615c49ee5',
-    redirectUri: makeRedirectUri({
-      scheme: 'orbitchat',
-    }),
-  });
-
-  // ─── Listen to Firebase Auth State ──────────────────────────────
   useEffect(() => {
-    checkUser();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      setLoading(false);
+    });
+    return unsubscribe;
   }, []);
 
-  const checkUser = async () => {
-    try {
-      const storedUser = await AsyncStorage.getItem('user');
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-      } else {
-        setUser(null);
-      }
-    } catch (error) {
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
+  // ✅ FIXED: Accept all 4 arguments
+  const signUp = async (fullName, phone, email, password) => {
+    console.log('🔥 AuthContext signUp called with:', { fullName, phone, email });
+    
+    // 1. Create user in Firebase Auth
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const uid = userCredential.user.uid;
+    console.log('✅ User created with UID:', uid);
+
+    // 2. Save user profile to Firestore
+    await setDoc(doc(db, 'users', uid), {
+      fullName,
+      phone,
+      email: email.toLowerCase(),
+      createdAt: new Date().toISOString(),
+    });
+    console.log('✅ Firestore user data saved');
+
+    return userCredential.user;
   };
 
-  const login = async (userData) => {
-    try {
-      await AsyncStorage.setItem('user', JSON.stringify(userData));
-      setUser(userData);
-    } catch (error) {
-      throw new Error('Login failed');
-    }
+  // ✅ signIn remains the same
+  const signIn = (email, password) => {
+    return signInWithEmailAndPassword(auth, email, password);
   };
 
-  const logout = async () => {
-    try {
-      await AsyncStorage.removeItem('user');
-      setUser(null);
-    } catch (error) {
-      // fail silently on logout
-    }
-  };
+  const logout = () => signOut(auth);
+
+  const value = { user, loading, signUp, signIn, logout };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
-      {children}
+    <AuthContext.Provider value={value}>
+      {!loading && children}
     </AuthContext.Provider>
   );
 }

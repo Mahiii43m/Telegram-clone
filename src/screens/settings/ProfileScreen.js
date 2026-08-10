@@ -128,6 +128,7 @@ export default function ProfileScreen({ navigation }) {
   };
 
   return (
+    
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       
@@ -205,7 +206,7 @@ export default function ProfileScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#ffffff'
   },
   header: {
     flexDirection: 'row',

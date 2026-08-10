@@ -428,7 +428,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
 
   header: {
-    paddingTop: Platform.OS === 'android' ? 10 : 4,
+    paddingTop: Platform.OS === 'android' ? 10 : 10,
     paddingHorizontal: 14,
     paddingBottom: 12,
   },
@@ -436,7 +436,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 12,r
+    
   },
   pillBtn: {
     backgroundColor: '#de994a',

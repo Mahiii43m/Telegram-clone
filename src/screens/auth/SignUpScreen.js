@@ -13,6 +13,8 @@ import {
   Animated,
   ScrollView,
 } from 'react-native';
+import { useAuth } from '../../context/AuthContext';
+import AntennaTip from '../../assets/images/antenna-tip.svg';
 import LogoSVG from '../../assets/images/logo.svg';
 
 const { width, height } = Dimensions.get('window');
@@ -20,6 +22,7 @@ const { width, height } = Dimensions.get('window');
 export default function SignUpScreen({ navigation }) {
   const { signUp } = useAuth();
   const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -27,6 +30,12 @@ export default function SignUpScreen({ navigation }) {
   const [error, setError] = useState('');
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
+
+  // ─── Password requirement states ────────────────────────────────
+  const [meetsLength, setMeetsLength] = useState(false);
+  const [meetsLowercase, setMeetsLowercase] = useState(false);
+  const [meetsUppercase, setMeetsUppercase] = useState(false);
+  const [meetsSpecialChar, setMeetsSpecialChar] = useState(false);
 
   useEffect(() => {
     Animated.parallel([
@@ -43,30 +52,101 @@ export default function SignUpScreen({ navigation }) {
     ]).start();
   }, []);
 
-  const handleSignUp = async () => {
-    if (!fullName.trim()) {
-      setError('Please enter your full name');
-      return;
-    }
-    if (!email.trim() || !email.includes('@') || !email.includes('.')) {
-      setError('Please enter a valid email address');
-      return;
-    }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      navigation.navigate('Login');
-    }, 2000);
+  // ─── Check password requirements in real-time ──────────────────
+  const checkPasswordRequirements = (text) => {
+    setPassword(text);
+    setMeetsLength(text.length >= 12);
+    setMeetsLowercase(/[a-z]/.test(text));
+    setMeetsUppercase(/[A-Z]/.test(text));
+    setMeetsSpecialChar(/[^A-Za-z0-9]/.test(text));
   };
+
+  // ─── Password validation for final submit ──────────────────────
+  const validatePassword = (password) => {
+    if (password.length < 12) {
+      return 'Password must be at least 12 characters long.';
+    }
+    if (!/[a-z]/.test(password)) {
+      return 'Password must contain at least one lowercase letter.';
+    }
+    if (!/[A-Z]/.test(password)) {
+      return 'Password must contain at least one uppercase letter.';
+    }
+    if (!/[^A-Za-z0-9]/.test(password)) {
+      return 'Password must contain at least one special character (e.g., !@#$%).';
+    }
+    return null;
+  };
+
+  const validateEmail = (email) => {
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return regex.test(email);
+};
+
+    const handleSignUp = async () => {
+      // ── Full name ──────────────────────────────────
+      if (!fullName.trim()) {
+        setError('Please enter your full name');
+        return;
+      }
+
+      // ── Phone ──────────────────────────────────────
+      if (!phone.trim() || phone.length < 10) {
+        setError('Please enter a valid phone number (min 10 digits)');
+        return;
+      }
+
+      // ── Email validation ───────────────────────────
+      if (!email.trim() || !validateEmail(email)) {
+        setError('Please enter a valid email address (e.g., name@domain.com)');
+        return;
+      }
+
+      const passwordError = validatePassword(password);
+      if (passwordError) {
+        setError(passwordError);
+        return;
+      }
+
+        if (password !== confirmPassword) {
+          setError('Passwords do not match');
+          return;
+        }
+
+        setLoading(true);
+        setError('');
+
+      try {
+        await signUp(fullName, phone, email, password);
+        navigation.navigate('Login');
+      } catch (error) {
+        console.log('Sign up error:', error.message);
+        if (error.code === 'auth/email-already-in-use') {
+          setError('This email is already registered. Please sign in.');
+        } else if (error.code === 'auth/weak-password') {
+          setError('Password is too weak. Please meet all the requirements above.');
+        } else if (error.code === 'auth/invalid-email') {
+          setError('Invalid email address. Please check the format (e.g., name@domain.com).');
+        } else {
+          setError(error.message || 'Sign up failed. Please try again.');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+
+  // ─── Requirement Item Component ────────────────────────────────
+    const RequirementItem = ({ met, text }) => (
+      <View style={styles.requirementRow}>
+        <Text style={[styles.requirementBullet, met ? styles.bulletMet : styles.bulletNotMet]}>
+          {met ? '✓' : '*'}
+        </Text>
+        <Text style={styles.requirementText}>
+          {text}
+        </Text>
+      </View>
+    );
 
   return (
     <View style={styles.container}>
@@ -92,7 +172,7 @@ export default function SignUpScreen({ navigation }) {
             keyboardShouldPersistTaps="handled"
           >
             <View style={styles.logoContainer}>
-              <View style={{ width: 180, height: 80, backgroundColor: '#FF6B35', borderRadius: 10 }} />
+              <LogoSVG width={200} height={90} />
             </View>
 
             <View style={styles.textContainer}>
@@ -102,6 +182,7 @@ export default function SignUpScreen({ navigation }) {
             </View>
 
             <View style={styles.formContainer}>
+              {/* FULL NAME */}
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>FULL NAME</Text>
                 <TextInput
@@ -117,11 +198,29 @@ export default function SignUpScreen({ navigation }) {
                 />
               </View>
 
+              {/* PHONE NUMBER */}
+              <View style={styles.inputWrapper}>
+                <Text style={styles.inputLabel}>PHONE NUMBER</Text>
+                <TextInput
+                  style={[styles.input, error && styles.inputError]}
+                  placeholder="Enter your phone number"
+                  placeholderTextColor="rgba(255,255,255,0.35)"
+                  keyboardType="phone-pad"
+                  value={phone}
+                  onChangeText={(text) => {
+                    setError('');
+                    setPhone(text);
+                  }}
+                  returnKeyType="next"
+                />
+              </View>
+
+              {/* EMAIL */}
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>EMAIL</Text>
                 <TextInput
                   style={[styles.input, error && styles.inputError]}
-                  placeholder="yourname@ssgi.gov.et"
+                  placeholder="your@email.com"
                   placeholderTextColor="rgba(255,255,255,0.35)"
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -134,22 +233,28 @@ export default function SignUpScreen({ navigation }) {
                 />
               </View>
 
+              {/* PASSWORD */}
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>PASSWORD</Text>
                 <TextInput
                   style={[styles.input, error && styles.inputError]}
-                  placeholder="Min 6 characters"
+                  placeholder="Enter your password"
                   placeholderTextColor="rgba(255,255,255,0.35)"
                   secureTextEntry
                   value={password}
-                  onChangeText={(text) => {
-                    setError('');
-                    setPassword(text);
-                  }}
+                  onChangeText={checkPasswordRequirements}
                   returnKeyType="next"
                 />
               </View>
 
+              {/* ─── PASSWORD REQUIREMENTS LIST ─────────────────── */}
+              <View style={styles.requirementsContainer}>
+                <RequirementItem met={meetsLength} text="At least 12 characters" />
+                <RequirementItem met={meetsLowercase} text="At least one lowercase and uppercase letter" />
+                <RequirementItem met={meetsSpecialChar} text="At least one special character" />
+              </View>
+
+              {/* CONFIRM PASSWORD */}
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputLabel}>CONFIRM PASSWORD</Text>
                 <TextInput
@@ -186,7 +291,14 @@ export default function SignUpScreen({ navigation }) {
             <View style={styles.footer}>
               <TouchableOpacity
                 style={styles.signInRow}
-                onPress={() => navigation.navigate('Login')}
+                hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+                onPress={() => {
+                  if (navigation.canGoBack()) {
+                    navigation.goBack();
+                  } else {
+                    navigation.navigate('Login');
+                  }
+                }}
               >
                 <Text style={styles.signInText}>Already have an account?</Text>
                 <Text style={styles.signInLink}> Sign In</Text>
@@ -211,7 +323,7 @@ const styles = StyleSheet.create({
     right: 0,
     width: '100%',
     height: height * 0.52,
-    backgroundColor: '#FF6B35',
+    backgroundColor: '#74351e',
     borderTopLeftRadius: height * 0.42,
     borderTopRightRadius: height * 0.42,
   },
@@ -285,6 +397,41 @@ const styles = StyleSheet.create({
   inputError: {
     borderColor: '#FF6B6B',
   },
+
+  // ─── Password Requirements ──────────────────────────────────────
+  requirementsContainer: {
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  requirementRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 2,
+  },
+  requirementBullet: {
+    fontSize: 14,
+    marginRight: 10,
+    width: 16,
+  },
+  bulletMet: {
+    color: '#4CAF50', // Green
+  },
+  bulletNotMet: {
+    color: '#FF6B6B', // Red
+  },
+  requirementText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color:'rgba(255,255,255,0.3)',
+    
+  },
+  textMet: {
+    color: '#4CAF50', // Green
+  },
+  textNotMet: {
+    color: '#FF6B6B', // Red
+  },
+
   errorText: {
     color: '#FF6B6B',
     fontSize: 13,

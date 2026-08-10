@@ -20,7 +20,8 @@ import { useAuth } from '../../context/AuthContext';
 const { width, height } = Dimensions.get('window');
 
 export default function LoginScreen({ navigation }) {
-  const { login } = useAuth();
+  // Use your existing signIn from AuthContext
+  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -58,15 +59,34 @@ export default function LoginScreen({ navigation }) {
       ])
     ).start();
   }, []);
+  const validatePassword = (password) => {
+  if (password.length < 12) {
+    return 'Password must be at least 12 characters long.';
+  }
+  if (!/[a-z]/.test(password)) {
+    return 'Password must contain at least one lowercase letter.';
+  }
+  if (!/[A-Z]/.test(password)) {
+    return 'Password must contain at least one uppercase letter.';
+  }
+  if (!/[^A-Za-z0-9]/.test(password)) {
+    return 'Password must contain at least one special character (e.g., !@#$%).';
+  }
+  return null; // valid
+};
 
   // ✅ Normal email/password login – uses signIn from AuthContext
   const handleLogin = async () => {
-    if (!email.trim() || !email.includes('@') || !email.includes('.')) {
-      setError('Please enter a valid email address');
-      return;
-    }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+  // ── Email validation ──────────────────────────
+  if (!email.trim() || !email.includes('@') || !email.includes('.')) {
+    setError('Please enter a valid email address');
+    return;
+  }
+
+  // ── Password validation ───────────────────────
+  const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);  // ✅ Shows specific error message
       return;
     }
 
@@ -74,26 +94,36 @@ export default function LoginScreen({ navigation }) {
     setError('');
 
     try {
-      await login({
-        email,
-        name: email.split('@')[0],
-      });
-      // Navigation happens automatically via AppNavigator when user state changes
+      await signIn(email, password);
+      navigation.navigate('Main');
     } catch (err) {
-      const message = err?.message?.includes('cancel')
-        ? 'Google sign-in was cancelled.'
-        : 'Google sign-in failed. Please try again.';
-      setError(message);
+      console.log('Login error:', err.message);
+      
+      if (err.code === 'auth/user-not-found') {
+        setError('No account found with this email.');
+      } else if (err.code === 'auth/wrong-password') {
+        setError('Incorrect password.');
+      } else if (err.code === 'auth/too-many-requests') {
+        setError('Too many failed attempts. Please try again later.');
+      } else {
+        setError(err.message || 'Login failed. Please try again.');
+      }
+    } finally {
       setLoading(false);
     }
   };
+  
 
+  // ✅ Placeholder for Google sign‑in – you can implement later
   const handleGoogleSignIn = async () => {
     setLoading(true);
     setError('');
-
     try {
-      await signInWithGoogle();
+      // If you have signInWithGoogle in your AuthContext, call it here.
+      // For now, we'll show an alert or just simulate.
+      // await signInWithGoogle();
+      setError('Google sign‑in coming soon!');
+      setLoading(false);
     } catch (err) {
       const message = err?.message?.includes('cancel')
         ? 'Google sign-in was cancelled.'
@@ -221,19 +251,6 @@ export default function LoginScreen({ navigation }) {
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.googleButton, loading && styles.buttonDisabled]}
-              onPress={handleGoogleSignIn}
-              disabled={loading}
-              activeOpacity={0.7}
-            >
-              {loading ? (
-                <ActivityIndicator color="#1B5674" size="small" />
-              ) : (
-                <Text style={styles.googleButtonText}>CONTINUE WITH GOOGLE</Text>
-              )}
-            </TouchableOpacity>
-
             {/* Google Sign‑In Button */}
             <TouchableOpacity
               style={[styles.googleButton, loading && styles.buttonDisabled]}
@@ -245,15 +262,15 @@ export default function LoginScreen({ navigation }) {
             </TouchableOpacity>
 
             {/* Sign Up Link */}
-            <View style={styles.signUpContainer}>
-              <Text style={styles.signUpText}>Don't have an account?</Text>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('SignUp')}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.signUpLink}> Sign Up</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={styles.signUpContainer}
+              onPress={() => navigation.navigate('SignUp')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.signUpText}>
+                Don't have an account?<Text style={styles.signUpLink}> Sign Up</Text>
+              </Text>
+            </TouchableOpacity>
 
             {/* Footer */}
             <View style={styles.footer}>
