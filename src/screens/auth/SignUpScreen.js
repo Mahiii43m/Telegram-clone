@@ -13,8 +13,6 @@ import {
   Animated,
   ScrollView,
 } from 'react-native';
-import { useAuth } from '../../context/AuthContext';
-import AntennaTip from '../../assets/images/antenna-tip.svg';
 import LogoSVG from '../../assets/images/logo.svg';
 
 const { width, height } = Dimensions.get('window');
@@ -113,40 +111,12 @@ export default function SignUpScreen({ navigation }) {
           return;
         }
 
-        setLoading(true);
-        setError('');
-
-      try {
-        await signUp(fullName, phone, email, password);
-        navigation.navigate('Login');
-      } catch (error) {
-        console.log('Sign up error:', error.message);
-        if (error.code === 'auth/email-already-in-use') {
-          setError('This email is already registered. Please sign in.');
-        } else if (error.code === 'auth/weak-password') {
-          setError('Password is too weak. Please meet all the requirements above.');
-        } else if (error.code === 'auth/invalid-email') {
-          setError('Invalid email address. Please check the format (e.g., name@domain.com).');
-        } else {
-          setError(error.message || 'Sign up failed. Please try again.');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-
-  // ─── Requirement Item Component ────────────────────────────────
-    const RequirementItem = ({ met, text }) => (
-      <View style={styles.requirementRow}>
-        <Text style={[styles.requirementBullet, met ? styles.bulletMet : styles.bulletNotMet]}>
-          {met ? '✓' : '*'}
-        </Text>
-        <Text style={styles.requirementText}>
-          {text}
-        </Text>
-      </View>
-    );
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      navigation.navigate('Login');
+    }, 2000);
+  };
 
   return (
     <View style={styles.container}>
@@ -323,7 +293,7 @@ const styles = StyleSheet.create({
     right: 0,
     width: '100%',
     height: height * 0.52,
-    backgroundColor: '#74351e',
+    backgroundColor: '#FF6B35',
     borderTopLeftRadius: height * 0.42,
     borderTopRightRadius: height * 0.42,
   },
