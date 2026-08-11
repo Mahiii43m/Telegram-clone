@@ -293,51 +293,51 @@ export default function ChatsListScreen({ navigation }) {
       {/* ── Bottom Bar ──────────────────────────────────── */}
       <View style={styles.bottomBar}>
         <View style={styles.navCapsule}>
-          {/* Chats tab */}
-          <TouchableOpacity style={styles.navBtn} activeOpacity={0.7} onPress={() => setActiveTab('All')}>
-            <Svg width={22} height={22} viewBox="0 0 24 24">
-              <Path
-                d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"
-                fill={activeTab === 'All' ? '#1b5674' : '#aaaaaa'}
-              />
-            </Svg>
-          </TouchableOpacity>
+  {/* Chats tab */}
+  <TouchableOpacity style={styles.navBtn} activeOpacity={0.7} onPress={() => setActiveTab('All')}>
+    <Svg width={22} height={22} viewBox="0 0 24 24">
+      <Path
+        d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"
+        fill={activeTab === 'All' ? '#1b5674' : '#aaaaaa'}
+      />
+    </Svg>
+  </TouchableOpacity>
 
-          {/* Department tab */}
-          <TouchableOpacity style={styles.navBtn} activeOpacity={0.7} onPress={() => setActiveTab('department')}>
-            <Svg width={22} height={22} viewBox="0 0 24 24">
-              <Path
-                d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V20h14v-3.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V20h6v-3.5c0-2.33-4.67-3.5-7-3.5z"
-                fill={activeTab === 'department' ? '#1b5674' : '#aaaaaa'}
-              />
-            </Svg>
-          </TouchableOpacity>
+  {/* Department tab */}
+  <TouchableOpacity style={styles.navBtn} activeOpacity={0.7} onPress={() => setActiveTab('department')}>
+    <Svg width={22} height={22} viewBox="0 0 24 24">
+      <Path
+        d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V20h14v-3.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V20h6v-3.5c0-2.33-4.67-3.5-7-3.5z"
+        fill={activeTab === 'department' ? '#1b5674' : '#aaaaaa'}
+      />
+    </Svg>
+  </TouchableOpacity>
 
-          {/* Profile / logout */}
-          <TouchableOpacity style={styles.navBtn} activeOpacity={0.7} onPress={() => setShowLogoutModal(true)}>
-            <Svg width={22} height={22} viewBox="0 0 24 24">
-              <Path
-                d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
-                fill="#aaaaaa"
-              />
-            </Svg>
-          </TouchableOpacity>
-        </View>
+  {/* ✅ NEW: Settings button */}
+  <TouchableOpacity 
+    style={styles.navBtn} 
+    activeOpacity={0.7} 
+    onPress={() => navigation.navigate('Settings')}
+  >
+    <Svg width={22} height={22} viewBox="0 0 24 24">
+      <Path
+        d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"
+        fill="#aaaaaa"
+      />
+    </Svg>
+  </TouchableOpacity>
 
-        {/* Search button */}
-        <TouchableOpacity
-          style={styles.searchBtn}
-          onPress={() => searchInputRef.current && searchInputRef.current.focus()}
-          activeOpacity={0.8}
-        >
-          <Svg width={20} height={20} viewBox="0 0 24 24">
-            <Path
-              d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
-              fill="#ffffff"
-            />
-          </Svg>
-        </TouchableOpacity>
-      </View>
+  {/* Profile / logout */}
+  <TouchableOpacity style={styles.navBtn} activeOpacity={0.7} onPress={() => setShowLogoutModal(true)}>
+    <Svg width={22} height={22} viewBox="0 0 24 24">
+      <Path
+        d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+        fill="#aaaaaa"
+      />
+    </Svg>
+  </TouchableOpacity>
+  </View>
+</View>
 
       {/* ── Logout Confirmation Modal ────────────────────── */}
       <Modal transparent animationType="fade" visible={showLogoutModal} onRequestClose={() => setShowLogoutModal(false)}>
