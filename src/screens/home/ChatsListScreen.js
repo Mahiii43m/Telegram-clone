@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+﻿import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,19 +12,53 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
-// ─── Mock Data ───────────────────────────────────────────────────────────────
+// ─── Full Mock Data ──────────────────────────────────────────────────────────
 const INITIAL_CHATS = [
   {
-    id: '1',
+    id: 'pinned1',
+    name: 'SSGI Announcements',
+    department: 'All Staff',
+    message: '🚨 New: Digital Addressing System eDAS launched',
+    time: '10:30 AM',
+    type: 'department',
+    unread: 0,
+    isAdmin: true,
+    isUrgent: true,
+    pinned: true,
+    hasFiles: true,
+    encrypted: true,
+    departmentTag: 'announcement',
+    groupDetails: {
+      name: 'SSGI Announcements',
+      description: 'Official announcements from the Space Science and Geospatial Institute',
+      leader: 'Director General',
+      members: [
+        { name: 'Director General', role: 'Admin' },
+        { name: 'Dr. Alene', role: 'Geology Dept Head' },
+        { name: 'Amina Mohammed', role: 'Geospatial Division Chief' },
+      ],
+    },
+  },
+  {
+    id: 'geo1',
     name: 'Geology Department',
+    department: 'Geospatial Division',
     message: 'Dr. Alene (Admin): upload terrain reports by 4 PM.',
     time: '11:45 AM',
     type: 'department',
     unread: 2,
+    isAdmin: true,
+    isUrgent: false,
+    pinned: false,
+    hasFiles: true,
+    encrypted: true,
+    departmentTag: 'geospatial',
     groupDetails: {
       name: 'Geology Department',
       description: 'Space Science and Geospatial Institute — Geology Exploration Team',
@@ -37,48 +71,20 @@ const INITIAL_CHATS = [
       ],
     },
   },
-  { id: 'sec-contacts', isSectionHeader: true, title: 'contacts' },
   {
-    id: '2',
-    name: 'Natan Ethiopia',
-    message: 'The telemetry readings are stable.',
-    time: '11:42 AM',
-    type: 'chats',
-    unread: 0,
-  },
-  {
-    id: '3',
-    name: 'Space Operations',
-    message: 'Dir. Kassa (Admin): launch checklist ready.',
-    time: '10:35 AM',
-    type: 'department',
-    unread: 5,
-    groupDetails: {
-      name: 'Space Operations',
-      description: 'SSGI — Orbital Launch and Telemetry Coordination Division',
-      leader: 'Director Kassa',
-      members: [
-        { name: 'Director Kassa', role: 'Operations Head & Admin' },
-        { name: 'Eshatu Tola', role: 'Communications Engineer' },
-        { name: 'Biniam Yosef', role: 'Orbit Analyst' },
-      ],
-    },
-  },
-  {
-    id: '4',
-    name: 'Dr. Alene',
-    message: 'Meeting scheduled for tomorrow at 10 AM.',
-    time: '09:10 AM',
-    type: 'chats',
-    unread: 1,
-  },
-  {
-    id: '5',
+    id: 'geo2',
     name: 'Geospatial Division',
+    department: 'Geospatial Division',
     message: 'Amina (Admin): coordinate data updated.',
     time: 'Yesterday',
     type: 'department',
     unread: 0,
+    isAdmin: true,
+    isUrgent: false,
+    pinned: false,
+    hasFiles: false,
+    encrypted: true,
+    departmentTag: 'geospatial',
     groupDetails: {
       name: 'Geospatial Division',
       description: 'SSGI — Mapping, Cartography & GIS Remote Sensing Staff',
@@ -91,260 +97,468 @@ const INITIAL_CHATS = [
     },
   },
   {
-    id: '6',
+    id: 'geo3',
+    name: 'Survey & Mapping Team',
+    department: 'Geospatial Division',
+    message: 'Ground survey completed at coordinates 9.03°N 38.74°E.',
+    time: 'Yesterday',
+    type: 'department',
+    unread: 3,
+    isAdmin: false,
+    isUrgent: false,
+    pinned: false,
+    hasFiles: true,
+    encrypted: true,
+    departmentTag: 'geospatial',
+    groupDetails: {
+      name: 'Survey & Mapping Team',
+      description: 'SSGI — On‑site survey and mapping operations',
+      leader: 'Sara Tekle',
+      members: [
+        { name: 'Sara Tekle', role: 'Team Lead' },
+        { name: 'Abebe Kebede', role: 'Survey Technician' },
+      ],
+    },
+  },
+  {
+    id: 'space1',
+    name: 'Space Operations',
+    department: 'Space Science',
+    message: 'Dir. Kassa (Admin): launch checklist ready.',
+    time: '11:42 AM',
+    type: 'department',
+    unread: 5,
+    isAdmin: true,
+    isUrgent: true,
+    pinned: false,
+    hasFiles: false,
+    encrypted: true,
+    departmentTag: 'space',
+    groupDetails: {
+      name: 'Space Operations',
+      description: 'SSGI — Orbital Launch and Telemetry Coordination Division',
+      leader: 'Director Kassa',
+      members: [
+        { name: 'Director Kassa', role: 'Operations Head & Admin' },
+        { name: 'Eshatu Tola', role: 'Communications Engineer' },
+        { name: 'Biniam Yosef', role: 'Orbit Analyst' },
+      ],
+    },
+  },
+  {
+    id: 'space2',
+    name: 'Space Weather Team',
+    department: 'Space Science',
+    message: 'Dr. Tadesse: Solar flare data incoming.',
+    time: '09:10 AM',
+    type: 'department',
+    unread: 1,
+    isAdmin: false,
+    isUrgent: false,
+    pinned: false,
+    hasFiles: true,
+    encrypted: true,
+    departmentTag: 'space',
+    groupDetails: {
+      name: 'Space Weather Team',
+      description: 'SSGI — Solar and space weather monitoring',
+      leader: 'Dr. Tadesse',
+      members: [
+        { name: 'Dr. Tadesse', role: 'Lead Scientist' },
+        { name: 'Hanna Mulu', role: 'Researcher' },
+      ],
+    },
+  },
+  {
+    id: 'research1',
+    name: 'Geophysical Research',
+    department: 'Research',
+    message: 'Seismic data analysis complete. Paper draft ready.',
+    time: 'Yesterday',
+    type: 'department',
+    unread: 2,
+    isAdmin: false,
+    isUrgent: false,
+    pinned: false,
+    hasFiles: true,
+    encrypted: true,
+    departmentTag: 'research',
+    groupDetails: {
+      name: 'Geophysical Research',
+      description: 'SSGI — Advanced geophysical studies and publications',
+      leader: 'Dr. Lemma',
+      members: [
+        { name: 'Dr. Lemma', role: 'Principal Investigator' },
+        { name: 'Tigist Hailu', role: 'Data Analyst' },
+      ],
+    },
+  },
+  {
+    id: 'ops1',
+    name: 'Telemetry Monitoring',
+    department: 'Operations',
+    message: 'The telemetry readings are stable.',
+    time: '11:42 AM',
+    type: 'department',
+    unread: 0,
+    isAdmin: false,
+    isUrgent: false,
+    pinned: false,
+    hasFiles: false,
+    encrypted: true,
+    departmentTag: 'operations',
+    groupDetails: {
+      name: 'Telemetry Monitoring',
+      description: 'SSGI — Real‑time telemetry and data streams',
+      leader: 'Eshatu Tola',
+      members: [
+        { name: 'Eshatu Tola', role: 'Lead Engineer' },
+        { name: 'Biniam Yosef', role: 'Orbit Analyst' },
+      ],
+    },
+  },
+  {
+    id: 'support1',
     name: 'Orbit Chat Support',
+    department: 'Support',
     message: 'Welcome to your premium orbital terminal.',
     time: 'Yesterday',
     type: 'chats',
     unread: 0,
+    isAdmin: false,
+    isUrgent: false,
+    pinned: false,
+    hasFiles: false,
+    encrypted: true,
+    departmentTag: 'support',
+  },
+  {
+    id: 'personal1',
+    name: 'Natan Ethiopia',
+    department: 'Personal',
+    message: 'The telemetry readings are stable.',
+    time: '11:42 AM',
+    type: 'chats',
+    unread: 0,
+    isAdmin: false,
+    isUrgent: false,
+    pinned: false,
+    hasFiles: false,
+    encrypted: true,
+    departmentTag: 'personal',
+  },
+  {
+    id: 'personal2',
+    name: 'Dr. Alene',
+    department: 'Personal',
+    message: 'Meeting scheduled for tomorrow at 10 AM.',
+    time: '09:10 AM',
+    type: 'chats',
+    unread: 1,
+    isAdmin: false,
+    isUrgent: false,
+    pinned: false,
+    hasFiles: false,
+    encrypted: true,
+    departmentTag: 'personal',
   },
 ];
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Department Tabs ────────────────────────────────────────────────────────
+const DEPARTMENT_TABS = [
+  { id: 'all', label: 'All', icon: 'planet-outline' },
+  { id: 'space', label: 'Space Science', icon: 'rocket-outline' },
+  { id: 'geospatial', label: 'Geospatial', icon: 'map-outline' },
+  { id: 'research', label: 'Research', icon: 'flask-outline' },
+  { id: 'operations', label: 'Operations', icon: 'radio-outline' },
+];
+
+// ─── Main Component ──────────────────────────────────────────────────────────
 export default function ChatsListScreen({ navigation }) {
   const { user, logout } = useAuth();
+  const { theme, isDark } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('All');
+  const [activeTab, setActiveTab] = useState('all');
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const searchInputRef = useRef(null);
 
-  // Filter chats by tab and search
-  const filteredData = INITIAL_CHATS.filter((item) => {
-    if (item.isSectionHeader) return true;
-    if (activeTab === 'chats' && item.type !== 'chats') return false;
-    if (activeTab === 'department' && item.type !== 'department') return false;
-    if (searchQuery.trim()) {
-      return item.name.toLowerCase().includes(searchQuery.toLowerCase());
-    }
-    return true;
-  }).filter((item, index, arr) => {
-    // Remove orphaned section headers
-    if (item.isSectionHeader) {
-      const next = arr[index + 1];
-      return next && !next.isSectionHeader;
-    }
-    return true;
-  });
+  const bgColor = theme?.background || '#0a0e1a';
+  const textColor = theme?.textPrimary || '#ffffff';
+  const secondaryText = theme?.textSecondary || '#a0a0b0';
+  const cardColor = theme?.surface || 'rgba(255,255,255,0.06)';
+  const brandColor = theme?.primary || '#1a4b8c';
+  const accentColor = theme?.secondary || '#6c5ce7';
+  const goldAccent = theme?.accent || '#de994a';
+  const borderColor = theme?.border || 'rgba(255,255,255,0.1)';
+
+  const adminBadgeBg = isDark ? 'rgba(108, 92, 231, 0.2)' : 'rgba(108, 92, 231, 0.15)';
+  const adminBadgeText = accentColor;
+  const pinnedBorderColor = brandColor;
+  const pinnedHeaderColor = isDark ? secondaryText : '#555555';
+
+  const getFilteredChats = () => {
+    let filtered = INITIAL_CHATS.filter((item) => {
+      if (activeTab !== 'all' && item.departmentTag !== activeTab) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        return (
+          item.name.toLowerCase().includes(q) ||
+          item.message.toLowerCase().includes(q) ||
+          item.department.toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
+    const pinned = filtered.filter(c => c.pinned);
+    const unpinned = filtered.filter(c => !c.pinned);
+    return { pinned, unpinned };
+  };
+
+  const { pinned, unpinned } = getFilteredChats();
 
   const handleLogout = async () => {
     setShowLogoutModal(false);
     await logout();
   };
 
-  // ── Render each list row ──
-  const renderItem = ({ item }) => {
-    if (item.isSectionHeader) {
-      return (
-        <View style={styles.sectionRow}>
-          <View style={styles.sectionLine} />
-          <Text style={styles.sectionLabel}>{item.title}</Text>
-          <View style={styles.sectionLine} />
-        </View>
-      );
-    }
-
+  const renderChatItem = ({ item }) => {
     const isGroup = item.type === 'department';
+    const isPinned = item.pinned;
 
     return (
       <TouchableOpacity
-        style={styles.chatRow}
+        style={[
+          styles.chatRow,
+          isPinned && [styles.pinnedRow, { borderLeftColor: pinnedBorderColor }],
+          { backgroundColor: cardColor, borderBottomColor: borderColor }
+        ]}
         onPress={() =>
           navigation.navigate('ChatWindow', {
             contactName: item.name,
             groupDetails: item.groupDetails,
           })
         }
-        activeOpacity={0.7}
+        activeOpacity={0.6}
       >
-        {/* Avatar */}
         <View style={[styles.avatar, isGroup && styles.avatarGroup]}>
-          <Svg width={26} height={26} viewBox="0 0 24 24">
-            {isGroup ? (
-              <Path
-                d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V20h14v-3.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V20h6v-3.5c0-2.33-4.67-3.5-7-3.5z"
-                fill="#ffffff"
-              />
-            ) : (
-              <Path
-                d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
-                fill="#ffffff"
-              />
-            )}
-          </Svg>
+          <Text style={[styles.avatarText, { color: '#ffffff' }]}>
+            {item.name.charAt(0)}
+          </Text>
+          {item.isAdmin && (
+            <View style={[styles.adminDot, { borderColor: isDark ? '#0a0e1a' : '#ffffff' }]}>
+              <Ionicons name="shield-checkmark" size={10} color="#ffffff" />
+            </View>
+          )}
         </View>
 
-        {/* Text block */}
         <View style={styles.chatInfo}>
           <View style={styles.chatTopRow}>
-            <Text style={styles.chatName} numberOfLines={1}>{item.name}</Text>
-            <Text style={styles.chatTime}>{item.time}</Text>
+            <View style={styles.nameRow}>
+              <Text style={[styles.chatName, { color: textColor }]} numberOfLines={1}>
+                {item.name}
+              </Text>
+              {item.isUrgent && <Text style={styles.urgentIcon}>🚨</Text>}
+              {item.isAdmin && (
+                <View style={[styles.adminBadge, { backgroundColor: adminBadgeBg }]}>
+                  <Text style={[styles.adminBadgeText, { color: adminBadgeText }]}>Admin</Text>
+                </View>
+              )}
+            </View>
+            <Text style={[styles.chatTime, { color: secondaryText }]}>{item.time}</Text>
           </View>
           <View style={styles.chatBottomRow}>
-            <Text style={styles.chatPreview} numberOfLines={1}>{item.message}</Text>
+            <Text style={[styles.chatPreview, { color: secondaryText }]} numberOfLines={1}>
+              {item.message}
+            </Text>
             {item.unread > 0 && (
-              <View style={styles.unreadBadge}>
-                <Text style={styles.unreadText}>{item.unread}</Text>
+              <View style={[styles.unreadBadge, { backgroundColor: brandColor }]}>
+                <Text style={[styles.unreadText, { color: '#ffffff' }]}>{item.unread}</Text>
               </View>
             )}
+          </View>
+          <View style={styles.chatMetaRow}>
+            <Text style={[styles.departmentLabel, { color: accentColor }]}>
+              {item.department}
+            </Text>
+            <View style={styles.iconRow}>
+              {item.hasFiles && (
+                <Ionicons name="attach-outline" size={14} color={secondaryText} style={styles.iconSpacing} />
+              )}
+              {item.encrypted && (
+                <Ionicons name="lock-closed" size={12} color={secondaryText} />
+              )}
+            </View>
           </View>
         </View>
       </TouchableOpacity>
     );
   };
 
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
+  const renderPinnedHeader = () => {
+    if (pinned.length === 0) return null;
+    return (
+      <View style={[styles.pinnedHeader, { borderBottomColor: borderColor }]}>
+        <Ionicons name="pin" size={16} color={brandColor} />
+        <Text style={[styles.pinnedHeaderText, { color: pinnedHeaderColor }]}>PINNED</Text>
+      </View>
+    );
+  };
 
-      {/* ── Header ─────────────────────────────────────── */}
+  const renderList = () => {
+    if (pinned.length > 0) {
+      return (
+        <FlatList
+          data={unpinned}
+          keyExtractor={(item) => item.id}
+          renderItem={renderChatItem}
+          style={styles.list}
+          contentContainerStyle={styles.listContent}
+          ListHeaderComponent={
+            <>
+              {renderPinnedHeader()}
+              {pinned.map((item) => (
+                <View key={item.id}>
+                  {renderChatItem({ item })}
+                </View>
+              ))}
+              <View style={[styles.divider, { borderBottomColor: borderColor, marginLeft: 0 }]} />
+            </>
+          }
+          ItemSeparatorComponent={() => <View style={[styles.divider, { borderBottomColor: borderColor }]} />}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="chatbubbles-outline" size={48} color={secondaryText} />
+              <Text style={[styles.emptyText, { color: secondaryText }]}>No chats found</Text>
+            </View>
+          }
+        />
+      );
+    } else {
+      return (
+        <FlatList
+          data={unpinned}
+          keyExtractor={(item) => item.id}
+          renderItem={renderChatItem}
+          style={styles.list}
+          contentContainerStyle={styles.listContent}
+          ItemSeparatorComponent={() => <View style={[styles.divider, { borderBottomColor: borderColor }]} />}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="chatbubbles-outline" size={48} color={secondaryText} />
+              <Text style={[styles.emptyText, { color: secondaryText }]}>No chats found</Text>
+            </View>
+          }
+        />
+      );
+    }
+  };
+
+  return (
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: bgColor }]}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <LinearGradient
+        colors={isDark ? ['#0a0e1a', '#1a2a4a'] : ['#f5f3ff', '#e0d5ff']}
+        style={StyleSheet.absoluteFillObject}
+      />
+
       <View style={styles.header}>
-        {/* Top row */}
         <View style={styles.headerTopRow}>
-          {/* Edit / Logout button */}
           <TouchableOpacity
-            style={styles.pillBtn}
+            style={[styles.pillBtn, { backgroundColor: goldAccent }]}
             onPress={() => setShowLogoutModal(true)}
             activeOpacity={0.8}
           >
-            <Text style={styles.pillBtnText}>Edit</Text>
+            <Text style={[styles.pillBtnText, { color: '#ffffff' }]}>Edit</Text>
           </TouchableOpacity>
-
-          {/* Title */}
-          <View style={styles.titlePill}>
-            <Text style={styles.titlePillText}>chats</Text>
+          <View style={[styles.titlePill, { backgroundColor: goldAccent }]}>
+            <Text style={[styles.titlePillText, { color: '#ffffff' }]}>chats</Text>
           </View>
-
-          {/* Right controls */}
-          <View style={styles.rightControls}>
+          <View style={[styles.rightControls, { backgroundColor: 'rgba(0,0,0,0.2)' }]}>
             <TouchableOpacity
               onPress={() => Alert.alert('Notifications', 'No new notifications')}
               activeOpacity={0.7}
             >
-              <Svg width={18} height={18} viewBox="0 0 24 24">
-                <Path
-                  d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"
-                  fill="#ffffff"
-                />
-              </Svg>
+              <Ionicons name="notifications-outline" size={22} color="#ffffff" />
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Search bar */}
-        <View style={styles.searchBar}>
-          <Svg width={15} height={15} viewBox="0 0 24 24" style={{ marginRight: 6 }}>
-            <Path
-              d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
-              fill="#8a8a8a"
-            />
-          </Svg>
+        <View style={[styles.searchBar, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.05)' }]}>
+          <Ionicons name="search-outline" size={18} color={secondaryText} style={{ marginRight: 8 }} />
           <TextInput
             ref={searchInputRef}
-            style={styles.searchInput}
-            placeholder="Search"
-            placeholderTextColor="#8a8a8a"
+            style={[styles.searchInput, { color: textColor }]}
+            placeholder="Search chats, files, or people..."
+            placeholderTextColor={secondaryText}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')} activeOpacity={0.7}>
-              <Svg width={16} height={16} viewBox="0 0 24 24">
-                <Path
-                  d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
-                  fill="#8a8a8a"
-                />
-              </Svg>
+              <Ionicons name="close-circle" size={18} color={secondaryText} />
             </TouchableOpacity>
           )}
         </View>
 
-        {/* Tabs */}
-        <View style={styles.tabRow}>
-          {['All', 'chats', 'department'].map((tab) => (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabsContainer}
+        >
+          {DEPARTMENT_TABS.map((tab) => (
             <TouchableOpacity
-              key={tab}
-              style={[styles.tab, activeTab === tab && styles.tabActive]}
-              onPress={() => setActiveTab(tab)}
-              activeOpacity={0.8}
+              key={tab.id}
+              style={[
+                styles.tab,
+                activeTab === tab.id && [styles.tabActive, { backgroundColor: brandColor }],
+                { borderColor: borderColor }
+              ]}
+              onPress={() => setActiveTab(tab.id)}
+              activeOpacity={0.7}
             >
-              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-                {tab}
+              <Ionicons
+                name={tab.icon}
+                size={16}
+                color={activeTab === tab.id ? '#ffffff' : secondaryText}
+                style={styles.tabIcon}
+              />
+              <Text
+                style={[
+                  styles.tabText,
+                  { color: activeTab === tab.id ? '#ffffff' : secondaryText },
+                ]}
+              >
+                {tab.label}
               </Text>
             </TouchableOpacity>
           ))}
+        </ScrollView>
+      </View>
+
+      {renderList()}
+
+      <View style={[styles.bottomBar, { backgroundColor: bgColor, borderTopColor: borderColor }]}>
+        <View style={[styles.navCapsule, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
+          <TouchableOpacity style={styles.navBtn} activeOpacity={0.7} onPress={() => setActiveTab('all')}>
+            <Ionicons name="chatbubble-ellipses-outline" size={24} color={activeTab === 'all' ? brandColor : '#aaaaaa'} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navBtn} activeOpacity={0.7} onPress={() => setActiveTab('department')}>
+            <Ionicons name="people-outline" size={24} color={activeTab === 'department' ? brandColor : '#aaaaaa'} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navBtn} activeOpacity={0.7} onPress={() => navigation.navigate('Settings')}>
+            <Ionicons name="settings-outline" size={24} color="#aaaaaa" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navBtn} activeOpacity={0.7} onPress={() => setShowLogoutModal(true)}>
+            <Ionicons name="person-outline" size={24} color="#aaaaaa" />
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* ── Chat List ───────────────────────────────────── */}
-      <FlatList
-        data={filteredData}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        style={styles.list}
-        contentContainerStyle={styles.listContent}
-        ItemSeparatorComponent={() => <View style={styles.divider} />}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No chats found</Text>
-          </View>
-        }
-      />
-
-      {/* ── Bottom Bar ──────────────────────────────────── */}
-      <View style={styles.bottomBar}>
-        <View style={styles.navCapsule}>
-  {/* Chats tab */}
-  <TouchableOpacity style={styles.navBtn} activeOpacity={0.7} onPress={() => setActiveTab('All')}>
-    <Svg width={22} height={22} viewBox="0 0 24 24">
-      <Path
-        d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"
-        fill={activeTab === 'All' ? '#1b5674' : '#aaaaaa'}
-      />
-    </Svg>
-  </TouchableOpacity>
-
-  {/* Department tab */}
-  <TouchableOpacity style={styles.navBtn} activeOpacity={0.7} onPress={() => setActiveTab('department')}>
-    <Svg width={22} height={22} viewBox="0 0 24 24">
-      <Path
-        d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V20h14v-3.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V20h6v-3.5c0-2.33-4.67-3.5-7-3.5z"
-        fill={activeTab === 'department' ? '#1b5674' : '#aaaaaa'}
-      />
-    </Svg>
-  </TouchableOpacity>
-
-  {/* ✅ NEW: Settings button */}
-  <TouchableOpacity 
-    style={styles.navBtn} 
-    activeOpacity={0.7} 
-    onPress={() => navigation.navigate('Settings')}
-  >
-    <Svg width={22} height={22} viewBox="0 0 24 24">
-      <Path
-        d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"
-        fill="#aaaaaa"
-      />
-    </Svg>
-  </TouchableOpacity>
-
-  {/* Profile / logout */}
-  <TouchableOpacity style={styles.navBtn} activeOpacity={0.7} onPress={() => setShowLogoutModal(true)}>
-    <Svg width={22} height={22} viewBox="0 0 24 24">
-      <Path
-        d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
-        fill="#aaaaaa"
-      />
-    </Svg>
-  </TouchableOpacity>
-  </View>
-</View>
-
-      {/* ── Logout Confirmation Modal ────────────────────── */}
       <Modal transparent animationType="fade" visible={showLogoutModal} onRequestClose={() => setShowLogoutModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Sign Out</Text>
-            <Text style={styles.modalMessage}>
+            <Text style={[styles.modalTitle, { color: '#111111' }]}>Sign Out</Text>
+            <Text style={[styles.modalMessage, { color: '#555555' }]}>
               Are you sure you want to sign out{user?.name ? `, ${user.name}` : ''}?
             </Text>
             <View style={styles.modalButtons}>
@@ -353,14 +567,14 @@ export default function ChatsListScreen({ navigation }) {
                 onPress={() => setShowLogoutModal(false)}
                 activeOpacity={0.8}
               >
-                <Text style={styles.cancelBtnText}>Cancel</Text>
+                <Text style={[styles.cancelBtnText, { color: '#555555' }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.logoutBtn}
                 onPress={handleLogout}
                 activeOpacity={0.8}
               >
-                <Text style={styles.logoutBtnText}>Sign Out</Text>
+                <Text style={[styles.logoutBtnText, { color: '#ffffff' }]}>Sign Out</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -370,182 +584,103 @@ export default function ChatsListScreen({ navigation }) {
   );
 }
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#b6a378',
-  },
-
-  // Header
+  safeArea: { flex: 1 },
   header: {
-    backgroundColor: '#b6a378',
     paddingTop: Platform.OS === 'android' ? 10 : 4,
     paddingHorizontal: 14,
-    paddingBottom: 12,
+    paddingBottom: 8,
   },
   headerTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 10,
   },
-  pillBtn: {
-    backgroundColor: '#de994a',
-    borderRadius: 14,
-    paddingVertical: 5,
-    paddingHorizontal: 16,
-  },
-  pillBtnText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  titlePill: {
-    backgroundColor: '#de994a',
-    borderRadius: 14,
-    paddingVertical: 5,
-    paddingHorizontal: 22,
-  },
-  titlePillText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: 'bold',
-  },
-  rightControls: {
-    backgroundColor: 'rgba(0,0,0,0.2)',
-    borderRadius: 14,
-    padding: 8,
-  },
-
-  // Search
+  pillBtn: { borderRadius: 14, paddingVertical: 5, paddingHorizontal: 16 },
+  pillBtnText: { fontWeight: 'bold', fontSize: 14 },
+  titlePill: { borderRadius: 14, paddingVertical: 5, paddingHorizontal: 22 },
+  titlePillText: { fontWeight: 'bold', fontSize: 15 },
+  rightControls: { borderRadius: 14, padding: 6 },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.88)',
     borderRadius: 12,
     height: 38,
     paddingHorizontal: 10,
-    marginBottom: 10,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: '#333333',
-    paddingVertical: 0,
-  },
-
-  // Tabs
-  tabRow: {
-    flexDirection: 'row',
-    gap: 6,
-  },
+  searchInput: { flex: 1, fontSize: 14, paddingVertical: 0 },
+  tabsContainer: { paddingVertical: 4 },
   tab: {
-    flex: 1,
-    alignItems: 'center',
-    borderRadius: 14,
-    paddingVertical: 6,
-  },
-  tabActive: {
-    backgroundColor: '#de994a',
-  },
-  tabText: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    color: '#4a3b1f',
-  },
-  tabTextActive: {
-    color: '#ffffff',
-  },
-
-  // List
-  list: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  listContent: {
-    paddingBottom: 20,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#f0f0f0',
-    marginLeft: 76,
-  },
-
-  // Section header
-  sectionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#ffffff',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
   },
-  sectionLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#e0e0e0',
-  },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: '#888888',
-    marginHorizontal: 10,
-    textTransform: 'lowercase',
-  },
-
-  // Chat row
+  tabActive: { borderColor: 'transparent' },
+  tabIcon: { marginRight: 4 },
+  tabText: { fontSize: 12, fontWeight: '600' },
+  list: { flex: 1 },
+  listContent: { paddingBottom: 10 },
   chatRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
   },
+  pinnedRow: { borderLeftWidth: 3, paddingLeft: 13 },
   avatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#b6b6b6',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
+    position: 'relative',
   },
-  avatarGroup: {
-    backgroundColor: '#1b5674',
+  avatarGroup: { borderWidth: 2, borderColor: '#6c5ce7' },
+  avatarText: { fontSize: 20, fontWeight: '600' },
+  adminDot: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: '#6c5ce7',
+    borderRadius: 10,
+    width: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
   },
-  chatInfo: {
-    flex: 1,
-  },
+  chatInfo: { flex: 1 },
   chatTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 2,
   },
-  chatName: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: '#111111',
-    flex: 1,
-    marginRight: 8,
-  },
-  chatTime: {
-    fontSize: 11,
-    color: '#8a8a8a',
-  },
+  nameRow: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  chatName: { fontSize: 15, fontWeight: '600', flex: 1 },
+  urgentIcon: { fontSize: 14, marginLeft: 4 },
+  adminBadge: { borderRadius: 4, paddingHorizontal: 6, paddingVertical: 1, marginLeft: 6 },
+  adminBadgeText: { fontSize: 9, fontWeight: '600' },
+  chatTime: { fontSize: 11, marginLeft: 8 },
   chatBottomRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  chatPreview: {
-    fontSize: 13,
-    color: '#666666',
-    flex: 1,
-    marginRight: 8,
-  },
+  chatPreview: { fontSize: 13, flex: 1, marginRight: 8 },
   unreadBadge: {
-    backgroundColor: '#1b5674',
     borderRadius: 10,
     minWidth: 20,
     height: 20,
@@ -553,70 +688,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 5,
   },
-  unreadText: {
-    color: '#ffffff',
-    fontSize: 11,
-    fontWeight: 'bold',
-  },
-
-  // Empty state
-  emptyContainer: {
-    flex: 1,
+  unreadText: { fontSize: 11, fontWeight: 'bold' },
+  chatMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 60,
+    marginTop: 2,
   },
-  emptyText: {
-    color: '#8a8a8a',
-    fontSize: 16,
+  departmentLabel: { fontSize: 11, fontWeight: '500' },
+  iconRow: { flexDirection: 'row', alignItems: 'center' },
+  iconSpacing: { marginRight: 4 },
+  pinnedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
   },
-
-  // Bottom bar
+  pinnedHeaderText: { fontSize: 12, fontWeight: '700', letterSpacing: 1, marginLeft: 6 },
+  divider: { borderBottomWidth: 1, marginLeft: 76 },
+  emptyContainer: { alignItems: 'center', paddingVertical: 60 },
+  emptyText: { fontSize: 16, marginTop: 12 },
   bottomBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#b6a378',
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingBottom: Platform.OS === 'ios' ? 28 : 10,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.08)',
-    gap: 12,
   },
   navCapsule: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
     borderRadius: 28,
     height: 50,
     alignItems: 'center',
     justifyContent: 'space-around',
     paddingHorizontal: 10,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
   },
-  navBtn: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 6,
-  },
-  searchBtn: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#1b5674',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-  },
-
-  // Logout modal
+  navBtn: { flex: 1, alignItems: 'center', paddingVertical: 6 },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.45)',
@@ -630,22 +740,9 @@ const styles = StyleSheet.create({
     padding: 24,
     width: '100%',
   },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111111',
-    marginBottom: 8,
-  },
-  modalMessage: {
-    fontSize: 14,
-    color: '#555555',
-    lineHeight: 20,
-    marginBottom: 24,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: 10,
-  },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 8 },
+  modalMessage: { fontSize: 14, lineHeight: 20, marginBottom: 24 },
+  modalButtons: { flexDirection: 'row', gap: 10 },
   cancelBtn: {
     flex: 1,
     height: 46,
@@ -655,11 +752,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  cancelBtnText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#555555',
-  },
+  cancelBtnText: { fontSize: 15, fontWeight: '600' },
   logoutBtn: {
     flex: 1,
     height: 46,
@@ -668,9 +761,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  logoutBtnText: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: '#ffffff',
-  },
+  logoutBtnText: { fontSize: 15, fontWeight: 'bold' },
 });
