@@ -1,4 +1,3 @@
-// src/context/AuthContext.js
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { 
   createUserWithEmailAndPassword, 
@@ -6,7 +5,7 @@ import {
   signOut, 
   onAuthStateChanged 
 } from 'firebase/auth';
-import { auth } from '../firebase'; // Make sure this path is correct
+import { auth } from '../firebase';
 
 const AuthContext = createContext();
 
@@ -14,7 +13,6 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Sign up
   const signup = async (email, password) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -26,7 +24,6 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Sign in
   const login = async (email, password) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -38,7 +35,6 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Logout
   const logout = async () => {
     try {
       await signOut(auth);
@@ -49,7 +45,6 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Listen for auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
@@ -73,7 +68,6 @@ export function AuthProvider({ children }) {
   );
 }
 
-// Hook to use auth context
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
