@@ -1,1 +1,18 @@
+pluginManagement {
+    def reactNativeGradlePlugin = settings.pluginManagement.plugins.findByName('com.facebook.react')
+    if (!reactNativeGradlePlugin) {
+        settings.pluginManagement.plugins.apply {
+            id 'com.facebook.react'
+            version '0.74.5'
+        }
+    }
+}
+
 include ':app'
+
+if (settings.hasProperty("newArchEnabled") && settings.newArchEnabled == "true") {
+    include ':react-native-codegen'
+    project(':react-native-codegen').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-codegen/android')
+}
+
+apply from: new File(rootProject.projectDir, '../node_modules/expo-modules-autolinking/android/expo-gradle-plugin/expo-autolinking-settings-plugin.gradle')
