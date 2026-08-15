@@ -1,4 +1,4 @@
-﻿pluginManagement {
+pluginManagement {
     def reactNativeGradlePlugin = settings.pluginManagement.plugins.findByName('com.facebook.react')
     if (!reactNativeGradlePlugin) {
         settings.pluginManagement.plugins.apply {
