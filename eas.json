@@ -2,21 +2,18 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal",
-      "installCommand": "npm install --legacy-peer-deps"
+      "distribution": "internal"
     },
     "preview": {
       "distribution": "internal",
       "android": {
         "buildType": "apk"
-      },
-      "installCommand": "npm install --legacy-peer-deps"
+      }
     },
     "production": {
       "android": {
         "buildType": "app-bundle"
-      },
-      "installCommand": "npm install --legacy-peer-deps"
+      }
     }
   },
   "submit": {
