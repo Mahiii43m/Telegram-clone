@@ -1,2 +1,1 @@
 include ':app'
-apply from: new File(rootProject.projectDir, '../node_modules/expo-modules-autolinking/android/expo-gradle-plugin/expo-autolinking-settings-plugin.gradle')
