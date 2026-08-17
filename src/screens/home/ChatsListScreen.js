@@ -20,6 +20,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 // ─── Full Mock Data ──────────────────────────────────────────────────────────
 const INITIAL_CHATS = [
+  // 📌 PINNED
   {
     id: 'pinned1',
     name: 'SSGI Announcements',
@@ -45,6 +46,7 @@ const INITIAL_CHATS = [
       ],
     },
   },
+  // 🌍 GEOSPATIAL DIVISION
   {
     id: 'geo1',
     name: 'Geology Department',
@@ -120,6 +122,7 @@ const INITIAL_CHATS = [
       ],
     },
   },
+  // 🛰️ SPACE SCIENCE
   {
     id: 'space1',
     name: 'Space Operations',
@@ -169,6 +172,7 @@ const INITIAL_CHATS = [
       ],
     },
   },
+  // 🔬 RESEARCH
   {
     id: 'research1',
     name: 'Geophysical Research',
@@ -193,6 +197,7 @@ const INITIAL_CHATS = [
       ],
     },
   },
+  // 📡 OPERATIONS
   {
     id: 'ops1',
     name: 'Telemetry Monitoring',
@@ -217,6 +222,7 @@ const INITIAL_CHATS = [
       ],
     },
   },
+  // SUPPORT
   {
     id: 'support1',
     name: 'Orbit Chat Support',
@@ -232,6 +238,7 @@ const INITIAL_CHATS = [
     encrypted: true,
     departmentTag: 'support',
   },
+  // PERSONAL
   {
     id: 'personal1',
     name: 'Natan Ethiopia',
@@ -548,7 +555,7 @@ export default function ChatsListScreen({ navigation }) {
           <TouchableOpacity style={styles.navBtn} activeOpacity={0.7} onPress={() => navigation.navigate('Settings')}>
             <Ionicons name="settings-outline" size={24} color="#aaaaaa" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.navBtn} activeOpacity={0.7} onPress={() => setShowLogoutModal(true)}>
+          <TouchableOpacity style={styles.navBtn} activeOpacity={0.7} onPress={() => navigation.navigate('Profile')}>
             <Ionicons name="person-outline" size={24} color="#aaaaaa" />
           </TouchableOpacity>
         </View>

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
@@ -7,6 +7,7 @@ import SignUpScreen from '../screens/auth/SignUpScreen';
 import ChatsListScreen from '../screens/home/ChatsListScreen';
 import ChatWindowScreen from '../screens/chat/ChatWindowScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
+import ProfileScreen from '../screens/profile/ProfileScreen';
 import BaseScreen from '../screens/BaseScreen';
 
 const Stack = createNativeStackNavigator();
@@ -33,11 +34,10 @@ export default function AppNavigator() {
         <>
           <Stack.Screen name="ChatsList" component={ChatsListScreen} />
           <Stack.Screen name="ChatWindow" component={ChatWindowScreen} />
-          
-          {/* Settings & all sub-screens */}
           <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
           
-          {/* Sub-screens for Settings */}
+          {/* Settings sub-screens */}
           <Stack.Screen name="Account" component={BaseScreen} initialParams={{ title: 'Account' }} options={{ headerShown: false }} />
           <Stack.Screen name="PrivacySecurity" component={BaseScreen} initialParams={{ title: 'Privacy & Security' }} options={{ headerShown: false }} />
           <Stack.Screen name="Devices" component={BaseScreen} initialParams={{ title: 'Devices' }} options={{ headerShown: false }} />

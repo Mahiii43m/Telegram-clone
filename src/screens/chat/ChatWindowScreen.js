@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -9,70 +9,78 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
-  Modal,
+  Alert,
   ScrollView,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { StatusBar } from 'expo-status-bar';
 import { useTheme } from '../../context/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
 
-// ─── Mock Messages ────────────────────────────────────────────────────────────
-const DEFAULT_1ON1_MESSAGES = [
-  { id: '1', text: 'Hello! Telemetry checks out normal here.', sender: 'them', senderName: 'Contact', time: '11:42 AM' },
-  { id: '2', text: 'Great. Are the geospatial imagery files ready for transmission?', sender: 'me', senderName: 'Me', time: '11:43 AM' },
-  { id: '3', text: 'Yes, they are compiled. Initiating satellite uplink now.', sender: 'them', senderName: 'Contact', time: '11:45 AM' },
-  { id: '4', text: 'Acknowledged. Let me know when the sync completes.', sender: 'me', senderName: 'Me', time: '11:46 AM' },
-];
-
-const GEOLOGY_MESSAGES = [
-  { id: '1', text: 'Hi team, telemetry data check completed. Satellite antenna is aligned.', sender: 'Natan Ethiopia', senderName: 'Natan Ethiopia', senderRole: 'Staff Geologist', time: '11:40 AM' },
-  { id: '2', text: 'Excellent. GIS mapping layers for the rift zone are uploaded.', sender: 'Sara Tekle', senderName: 'Sara Tekle', senderRole: 'Geospatial Analyst', time: '11:42 AM' },
-  { id: '3', text: 'I am on-site at the coordinates. Ground survey tools are calibrated.', sender: 'Abebe Kebede', senderName: 'Abebe Kebede', senderRole: 'Survey Technician', time: '11:43 AM' },
-  { id: '4', text: 'Please upload the terrain analysis reports by 4 PM. I will review and sign off as the admin leader.', sender: 'Dr. Alene', senderName: 'Dr. Alene', senderRole: 'Geology Dept Head & Admin', time: '11:45 AM', isAdmin: true },
-];
-
-const GENERAL_GROUP_MESSAGES = [
-  { id: '1', text: 'Attention department members, please report your current coordinates.', sender: 'Admin', senderName: 'Admin', senderRole: 'Staff Leader & Admin', time: '10:30 AM', isAdmin: true },
-  { id: '2', text: 'Communications link is active and telemetry is verified.', sender: 'Staff', senderName: 'Staff Member', senderRole: 'Specialist', time: '10:32 AM' },
+// ─── Decision Enablers Data ──────────────────────────────────────────────
+const DECISION_ENABLERS = [
+  {
+    id: 'edas',
+    icon: 'location-outline',
+    title: 'eDAS Address Lookup',
+    description: 'Find digital addresses in 73 Ethiopian cities',
+    action: () => Alert.alert('eDAS Lookup', 'Search for digital addresses by city (Adama, Arba Minch, Jinka, etc.)'),
+  },
+  {
+    id: 'satellite',
+    icon: 'satellite-outline',
+    title: 'Satellite CORS Network',
+    description: '9 operational stations · 30 more planned',
+    action: () => Alert.alert('Satellite CORS', 'View live satellite data network status.'),
+  },
+  {
+    id: 'research',
+    icon: 'document-text-outline',
+    title: 'Research Publications',
+    description: 'Latest papers from S-ARC 2026 conference',
+    action: () => Alert.alert('Publications', 'Browse research papers and conference proceedings.'),
+  },
+  {
+    id: 'disaster',
+    icon: 'warning-outline',
+    title: 'Disaster Risk Alerts',
+    description: 'Flood · Landslide · Earthquake monitoring',
+    action: () => Alert.alert('Disaster Alerts', 'View current disaster risk data from remote sensing.'),
+  },
+  {
+    id: 'maps',
+    icon: 'map-outline',
+    title: 'Geospatial Data Maps',
+    description: 'Urban planning · Agriculture · Water resources',
+    action: () => Alert.alert('Geospatial Maps', 'Open interactive map viewer for SSGI data.'),
+  },
+  {
+    id: 'training',
+    icon: 'school-outline',
+    title: 'Training Programs',
+    description: 'Journey to the Space · SciGirls · Radio Astronomy',
+    action: () => Alert.alert('Training', 'View upcoming training and capacity building programs.'),
+  },
 ];
 
 export default function ChatWindowScreen({ route, navigation }) {
   const { theme, isDark } = useTheme();
-  const { contactName, groupDetails } = route.params || { contactName: 'Contact' };
-  const [showInfoModal, setShowInfoModal] = useState(false);
-  const [inputText, setInputText] = useState('');
+  const { contactName, groupDetails } = route.params || {};
 
-  // Theme colors
+  const isDecisionChat = contactName === '🔑 Key Decision Enablers';
+
+  const [inputText, setInputText] = useState('');
+  const [messages, setMessages] = useState([
+    { id: '1', text: 'Hello!', sender: 'them', time: '11:42 AM' },
+    { id: '2', text: 'Hi there!', sender: 'me', time: '11:43 AM' },
+  ]);
+
   const bgColor = theme?.background || '#0a0e1a';
   const textColor = theme?.textPrimary || '#ffffff';
   const secondaryText = theme?.textSecondary || '#a0a0b0';
   const borderColor = theme?.border || 'rgba(255,255,255,0.1)';
   const brandColor = theme?.primary || '#1a4b8c';
-  const accentColor = theme?.secondary || '#6c5ce7';
-  const goldAccent = theme?.accent || '#de994a';
-  const surfaceColor = theme?.surface || 'rgba(255,255,255,0.06)';
-  const cardColor = theme?.card || 'rgba(255,255,255,0.05)';
-
-  // Message bubble colors
-  const bubbleSentBg = isDark ? 'rgba(96, 165, 250, 0.25)' : '#1a4b8c';
-  const bubbleReceivedBg = isDark ? 'rgba(255,255,255,0.08)' : '#e8e8ed';
-  const bubbleSentText = isDark ? '#f8fafc' : '#ffffff';
-  const bubbleReceivedText = isDark ? '#f8fafc' : '#1a1a2e';
-  
-  // Sender name colors (bright in dark mode)
-  const senderNameColor = isDark ? '#a78bfa' : '#6c5ce7';
-  const adminNameColor = isDark ? '#fbbf24' : '#de994a';
-  
-  // Role text color
-  const roleTextColor = isDark ? '#94a3b8' : '#666666';
-
-  const getInitialMessages = () => {
-    if (!groupDetails) return DEFAULT_1ON1_MESSAGES;
-    if (contactName.includes('Geology')) return GEOLOGY_MESSAGES;
-    return GENERAL_GROUP_MESSAGES;
-  };
-
-  const [messages, setMessages] = useState(getInitialMessages());
+  const cardColor = theme?.surface || 'rgba(255,255,255,0.06)';
 
   const handleSendMessage = () => {
     if (!inputText.trim()) return;
@@ -80,8 +88,6 @@ export default function ChatWindowScreen({ route, navigation }) {
       id: String(messages.length + 1),
       text: inputText.trim(),
       sender: 'me',
-      senderName: 'Me',
-      senderRole: 'Staff',
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
     setMessages([...messages, newMessage]);
@@ -90,52 +96,13 @@ export default function ChatWindowScreen({ route, navigation }) {
 
   const renderMessageItem = ({ item }) => {
     const isMe = item.sender === 'me';
-    const isGroup = !!groupDetails;
-    const isSenderAdmin = item.isAdmin || (isGroup && item.sender === groupDetails.leader);
-
     return (
       <View style={[styles.messageRow, isMe ? styles.messageRowMe : styles.messageRowThem]}>
-        {!isMe && (
-          <View style={[styles.miniAvatar, isSenderAdmin && styles.miniAvatarAdmin]}>
-            <Text style={[styles.miniAvatarText, { color: isDark ? '#f8fafc' : '#555555' }]}>
-              {isGroup ? item.sender.substring(0, 1) : contactName.substring(0, 1)}
-            </Text>
-          </View>
-        )}
-        <View style={[
-          styles.bubble,
-          isMe 
-            ? [styles.bubbleMe, { backgroundColor: bubbleSentBg }]
-            : [styles.bubbleThem, { backgroundColor: bubbleReceivedBg }]
-        ]}>
-          {isGroup && !isMe && (
-            <View style={styles.senderHeader}>
-              <Text style={[
-                styles.senderNameText,
-                { color: isSenderAdmin ? adminNameColor : senderNameColor }
-              ]}>
-                {item.sender}
-              </Text>
-              {isSenderAdmin && (
-                <View style={[styles.adminBadge, { backgroundColor: accentColor }]}>
-                  <Text style={styles.adminBadgeText}>Leader</Text>
-                </View>
-              )}
-            </View>
-          )}
-          {isGroup && !isMe && item.senderRole && (
-            <Text style={[styles.roleText, { color: roleTextColor }]}>{item.senderRole}</Text>
-          )}
-          <Text style={[
-            styles.bubbleText,
-            { color: isMe ? bubbleSentText : bubbleReceivedText }
-          ]}>
+        <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleThem]}>
+          <Text style={[styles.bubbleText, { color: isMe ? '#ffffff' : '#f0f0f5' }]}>
             {item.text}
           </Text>
-          <Text style={[
-            styles.timeText,
-            { color: isMe ? 'rgba(255,255,255,0.6)' : (isDark ? '#94a3b8' : '#8a8a9a') }
-          ]}>
+          <Text style={[styles.timeText, { color: isMe ? 'rgba(255,255,255,0.6)' : '#94a3b8' }]}>
             {item.time}
           </Text>
         </View>
@@ -143,168 +110,101 @@ export default function ChatWindowScreen({ route, navigation }) {
     );
   };
 
-  return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: bgColor }]}>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-      >
+  // ─── Decision Chat View ──────────────────────────────────────────────────
+  if (isDecisionChat) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: bgColor }]}>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
         {/* Header */}
         <View style={[styles.header, { backgroundColor: brandColor }]}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.7}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Svg width={24} height={24} viewBox="0 0 24 24">
               <Path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="#ffffff" />
             </Svg>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.headerTitleContainer}
-            onPress={() => groupDetails && setShowInfoModal(true)}
-            disabled={!groupDetails}
-            activeOpacity={groupDetails ? 0.7 : 1}
-          >
-            <Text style={styles.headerTitle}>{contactName}</Text>
-            <Text style={styles.headerSubtitle}>
-              {groupDetails
-                ? `group • ${groupDetails.members.length} members • tap for info`
-                : 'satellite linked • active'}
-            </Text>
-          </TouchableOpacity>
-
-          {groupDetails ? (
-            <TouchableOpacity
-              style={styles.infoIconWrapper}
-              onPress={() => setShowInfoModal(true)}
-              activeOpacity={0.7}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Svg width={22} height={22} viewBox="0 0 24 24">
-                <Path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" fill="#ffffff" />
-              </Svg>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.headerRightSpacer} />
-          )}
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitle}>🔑 Key Decision Enablers</Text>
+            <Text style={styles.headerSubtitle}>Powered by SSGI Data</Text>
+          </View>
+          <View style={{ width: 40 }} />
         </View>
 
-        {/* Messages List */}
+        <ScrollView contentContainerStyle={styles.decisionList} showsVerticalScrollIndicator={false}>
+          <Text style={[styles.decisionHeaderText, { color: secondaryText }]}>
+            Select a tool to access SSGI decision data
+          </Text>
+          {DECISION_ENABLERS.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={[styles.decisionCard, { backgroundColor: cardColor, borderColor: borderColor }]}
+              onPress={item.action}
+              activeOpacity={0.7}
+            >
+              <View style={styles.decisionIcon}>
+                <Ionicons name={item.icon} size={24} color={brandColor} />
+              </View>
+              <View style={styles.decisionContent}>
+                <Text style={[styles.decisionTitle, { color: textColor }]}>{item.title}</Text>
+                <Text style={[styles.decisionDescription, { color: secondaryText }]}>{item.description}</Text>
+              </View>
+              <Ionicons name="chevron-forward-outline" size={18} color={secondaryText} />
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // ─── Normal Chat View ──────────────────────────────────────────────────
+  return (
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: bgColor }]}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        {/* Header */}
+        <View style={[styles.header, { backgroundColor: brandColor }]}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Svg width={24} height={24} viewBox="0 0 24 24">
+              <Path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="#ffffff" />
+            </Svg>
+          </TouchableOpacity>
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitle}>{contactName || 'Chat'}</Text>
+            {groupDetails && (
+              <Text style={styles.headerSubtitle}>
+                group • {groupDetails.members?.length || 0} members
+              </Text>
+            )}
+          </View>
+          <View style={{ width: 40 }} />
+        </View>
+
+        {/* Messages */}
         <FlatList
           data={messages}
           keyExtractor={(item) => item.id}
           renderItem={renderMessageItem}
           contentContainerStyle={styles.messagesListContent}
-          style={styles.messagesList}
-          bounces={true}
         />
 
         {/* Input Bar */}
-        <View style={[styles.inputContainer, { backgroundColor: surfaceColor, borderTopColor: borderColor }]}>
+        <View style={[styles.inputContainer, { backgroundColor: cardColor, borderTopColor: borderColor }]}>
           <TextInput
-            style={[
-              styles.input,
-              { 
-                backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#f0f2f5',
-                color: isDark ? '#f8fafc' : '#1a1a2e'
-              }
-            ]}
+            style={[styles.input, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#f0f2f5', color: textColor }]}
             placeholder="Type your orbital message..."
-            placeholderTextColor={isDark ? '#94a3b8' : '#8a8a9a'}
+            placeholderTextColor={secondaryText}
             value={inputText}
             onChangeText={setInputText}
-            multiline={false}
           />
           <TouchableOpacity
             style={[styles.sendButton, { backgroundColor: brandColor }, !inputText.trim() && styles.sendButtonDisabled]}
             onPress={handleSendMessage}
             disabled={!inputText.trim()}
-            activeOpacity={0.8}
           >
             <Svg width={18} height={18} viewBox="0 0 24 24">
               <Path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="#ffffff" />
             </Svg>
           </TouchableOpacity>
         </View>
-
-        {/* Department Info Modal */}
-        {groupDetails && (
-          <Modal
-            animationType="slide"
-            transparent={true}
-            visible={showInfoModal}
-            onRequestClose={() => setShowInfoModal(false)}
-          >
-            <View style={styles.modalOverlay}>
-              <View style={[styles.modalContent, { backgroundColor: isDark ? '#1a1a2e' : '#ffffff' }]}>
-                <View style={[styles.modalHeader, { borderBottomColor: borderColor }]}>
-                  <Text style={[styles.modalHeaderTitle, { color: textColor }]}>Department Group Info</Text>
-                  <TouchableOpacity style={styles.closeButton} onPress={() => setShowInfoModal(false)}>
-                    <Svg width={24} height={24} viewBox="0 0 24 24">
-                      <Path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z" fill={textColor} />
-                    </Svg>
-                  </TouchableOpacity>
-                </View>
-
-                <ScrollView contentContainerStyle={styles.modalBody}>
-                  <View style={[styles.infoCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#f5f5f7', borderColor: borderColor }]}>
-                    <Text style={[styles.infoCardName, { color: textColor }]}>{groupDetails.name}</Text>
-                    <Text style={[styles.infoCardDescription, { color: secondaryText }]}>{groupDetails.description}</Text>
-                  </View>
-
-                  <Text style={[styles.sectionTitle, { color: secondaryText }]}>STAFF LEADER & ADMIN</Text>
-                  <View style={[styles.leaderCard, { backgroundColor: goldAccent }]}>
-                    <View style={styles.leaderBadge}>
-                      <Svg width={20} height={20} viewBox="0 0 24 24">
-                        <Path d="M12 2L1 21h22L12 2zm0 4l7.53 13H4.47L12 6zm-1 8h2v2h-2v-2zm0-4h2v2h-2v-2z" fill="#ffffff" />
-                      </Svg>
-                      <Text style={styles.leaderBadgeText}>Admin</Text>
-                    </View>
-                    <View style={styles.leaderInfo}>
-                      <Text style={styles.leaderName}>
-                        {groupDetails.members.find(m => m.name === groupDetails.leader)?.name || groupDetails.leader}
-                      </Text>
-                      <Text style={styles.leaderRole}>
-                        {groupDetails.members.find(m => m.name === groupDetails.leader)?.role || 'Department Head'}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <Text style={[styles.sectionTitle, { color: secondaryText }]}>STAFF MEMBERS ({groupDetails.members.length})</Text>
-                  <View style={[styles.membersListCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#f5f5f7', borderColor: borderColor }]}>
-                    {groupDetails.members.map((member, index) => {
-                      const isLeader = member.name === groupDetails.leader;
-                      return (
-                        <View key={index}>
-                          <View style={styles.memberRow}>
-                            <View style={[styles.memberAvatar, isLeader && { backgroundColor: goldAccent }]}>
-                              <Text style={styles.memberAvatarText}>{member.name.substring(0, 1)}</Text>
-                            </View>
-                            <View style={styles.memberInfo}>
-                              <Text style={[styles.memberName, { color: textColor }]}>{member.name}</Text>
-                              <Text style={[styles.memberRoleText, { color: secondaryText }]}>{member.role}</Text>
-                            </View>
-                            {isLeader && (
-                              <View style={[styles.leaderTag, { backgroundColor: goldAccent + '30' }]}>
-                                <Text style={[styles.leaderTagText, { color: goldAccent }]}>Admin</Text>
-                              </View>
-                            )}
-                          </View>
-                          {index < groupDetails.members.length - 1 && <View style={[styles.modalDivider, { backgroundColor: borderColor }]} />}
-                        </View>
-                      );
-                    })}
-                  </View>
-                </ScrollView>
-              </View>
-            </View>
-          </Modal>
-        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -327,25 +227,32 @@ const styles = StyleSheet.create({
   headerTitleContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10 },
   headerTitle: { fontSize: 17, fontWeight: 'bold', color: '#ffffff' },
   headerSubtitle: { fontSize: 11, color: '#fdfdfd', opacity: 0.9, marginTop: 2, textAlign: 'center' },
-  headerRightSpacer: { width: 32 },
-  infoIconWrapper: { padding: 4 },
-  messagesList: { flex: 1 },
+  decisionList: { padding: 16, paddingBottom: 30 },
+  decisionHeaderText: { fontSize: 13, textAlign: 'center', marginBottom: 16 },
+  decisionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 15,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  decisionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(26,75,140,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  decisionContent: { flex: 1 },
+  decisionTitle: { fontSize: 15, fontWeight: '600' },
+  decisionDescription: { fontSize: 12, marginTop: 2 },
   messagesListContent: { padding: 15, paddingBottom: 25 },
   messageRow: { flexDirection: 'row', marginBottom: 15, alignItems: 'flex-end' },
   messageRowMe: { justifyContent: 'flex-end' },
   messageRowThem: { justifyContent: 'flex-start' },
-  miniAvatar: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#dcdcdc',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-    marginBottom: 2,
-  },
-  miniAvatarAdmin: { backgroundColor: '#6c5ce7' },
-  miniAvatarText: { fontSize: 12, fontWeight: 'bold' },
   bubble: {
     borderRadius: 16,
     paddingHorizontal: 14,
@@ -361,13 +268,14 @@ const styles = StyleSheet.create({
       android: { elevation: 1 },
     }),
   },
-  bubbleMe: { borderBottomRightRadius: 4 },
-  bubbleThem: { borderBottomLeftRadius: 4 },
-  senderHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
-  senderNameText: { fontSize: 12, fontWeight: 'bold' },
-  adminBadge: { borderRadius: 6, paddingHorizontal: 5, paddingVertical: 1, marginLeft: 6 },
-  adminBadgeText: { color: '#ffffff', fontSize: 8, fontWeight: 'bold' },
-  roleText: { fontSize: 10, marginBottom: 4, fontWeight: '500' },
+  bubbleMe: {
+    backgroundColor: '#1a4b8c',
+    borderBottomRightRadius: 4,
+  },
+  bubbleThem: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderBottomLeftRadius: 4,
+  },
   bubbleText: { fontSize: 14, lineHeight: 20 },
   timeText: { fontSize: 9, textAlign: 'right', marginTop: 4 },
   inputContainer: {
@@ -394,96 +302,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sendButtonDisabled: { opacity: 0.5 },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
-    maxHeight: '85%',
-    paddingBottom: 25,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-  },
-  modalHeaderTitle: { fontSize: 17, fontWeight: 'bold' },
-  closeButton: { padding: 2 },
-  modalBody: { padding: 20 },
-  infoCard: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-  },
-  infoCardName: { fontSize: 18, fontWeight: 'bold', marginBottom: 6 },
-  infoCardDescription: { fontSize: 13, lineHeight: 18 },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    marginLeft: 4,
-    letterSpacing: 0.8,
-  },
-  leaderCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 16,
-    padding: 15,
-    marginBottom: 20,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#de994a',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-      },
-      android: { elevation: 4 },
-    }),
-  },
-  leaderBadge: {
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    borderRadius: 12,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 15,
-  },
-  leaderBadgeText: { color: '#ffffff', fontSize: 10, fontWeight: 'bold', marginTop: 2 },
-  leaderInfo: { flex: 1 },
-  leaderName: { fontSize: 16, fontWeight: 'bold', color: '#ffffff' },
-  leaderRole: { fontSize: 12, color: '#ffffff', opacity: 0.9, marginTop: 2 },
-  membersListCard: {
-    borderRadius: 16,
-    padding: 15,
-    borderWidth: 1,
-  },
-  memberRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  memberAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#dcdcdc',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  memberAvatarText: { fontSize: 14, fontWeight: 'bold', color: '#555555' },
-  memberInfo: { flex: 1 },
-  memberName: { fontSize: 14, fontWeight: 'bold' },
-  memberRoleText: { fontSize: 11, marginTop: 2 },
-  leaderTag: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  leaderTagText: { fontSize: 10, fontWeight: 'bold' },
-  modalDivider: { height: 1, marginVertical: 4 },
 });
