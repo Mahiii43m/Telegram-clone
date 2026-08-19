@@ -280,13 +280,13 @@ const DEPARTMENT_TABS = [
   { id: 'operations', label: 'Operations', icon: 'radio-outline' },
 ];
 
-// ─── Main Component ──────────────────────────────────────────────────────────
 export default function ChatsListScreen({ navigation }) {
   const { user, logout } = useAuth();
   const { theme, isDark } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const searchInputRef = useRef(null);
 
   const bgColor = theme?.background || '#0a0e1a';
@@ -326,6 +326,21 @@ export default function ChatsListScreen({ navigation }) {
   const handleLogout = async () => {
     setShowLogoutModal(false);
     await logout();
+  };
+
+  const openNewChat = () => {
+    setShowMenu(false);
+    navigation.navigate('NewChat');
+  };
+
+  const openNewGroup = () => {
+    setShowMenu(false);
+    navigation.navigate('NewGroup');
+  };
+
+  const openAboutSSGI = () => {
+    setShowMenu(false);
+    Alert.alert('About SSGI', 'Space Science and Geospatial Institute — established 2022.');
   };
 
   const renderChatItem = ({ item }) => {
@@ -482,10 +497,17 @@ export default function ChatsListScreen({ navigation }) {
           </View>
           <View style={[styles.rightControls, { backgroundColor: 'rgba(0,0,0,0.2)' }]}>
             <TouchableOpacity
-              onPress={() => Alert.alert('Notifications', 'No new notifications')}
+              onPress={() => navigation.navigate('Notifications')}
               activeOpacity={0.7}
+              style={{ marginRight: 12 }}
             >
               <Ionicons name="notifications-outline" size={22} color="#ffffff" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setShowMenu(!showMenu)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="ellipsis-vertical" size={22} color="#ffffff" />
             </TouchableOpacity>
           </View>
         </View>
@@ -543,6 +565,30 @@ export default function ChatsListScreen({ navigation }) {
       </View>
 
       {renderList()}
+
+      {showMenu && (
+        <TouchableOpacity
+          style={styles.menuOverlay}
+          activeOpacity={1}
+          onPress={() => setShowMenu(false)}
+        >
+          <View style={[styles.menuContainer, { backgroundColor: cardColor, borderColor: borderColor }]}>
+            <TouchableOpacity style={styles.menuItem} onPress={openNewChat}>
+              <Ionicons name="chatbubble-outline" size={20} color={accentColor} />
+              <Text style={[styles.menuItemText, { color: textColor }]}>New Chat</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={openNewGroup}>
+              <Ionicons name="people-outline" size={20} color={brandColor} />
+              <Text style={[styles.menuItemText, { color: textColor }]}>New Group</Text>
+            </TouchableOpacity>
+            <View style={[styles.menuDivider, { backgroundColor: borderColor }]} />
+            <TouchableOpacity style={styles.menuItem} onPress={openAboutSSGI}>
+              <Ionicons name="information-circle-outline" size={20} color={secondaryText} />
+              <Text style={[styles.menuItemText, { color: textColor }]}>About SSGI</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      )}
 
       <View style={[styles.bottomBar, { backgroundColor: bgColor, borderTopColor: borderColor }]}>
         <View style={[styles.navCapsule, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
@@ -608,7 +654,13 @@ const styles = StyleSheet.create({
   pillBtnText: { fontWeight: 'bold', fontSize: 14 },
   titlePill: { borderRadius: 14, paddingVertical: 5, paddingHorizontal: 22 },
   titlePillText: { fontWeight: 'bold', fontSize: 15 },
-  rightControls: { borderRadius: 14, padding: 6 },
+  rightControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -716,6 +768,46 @@ const styles = StyleSheet.create({
   divider: { borderBottomWidth: 1, marginLeft: 76 },
   emptyContainer: { alignItems: 'center', paddingVertical: 60 },
   emptyText: { fontSize: 16, marginTop: 12 },
+  // ─── Dropdown Menu ──────────────────────────────────────────────────────
+  menuOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    zIndex: 999,
+  },
+  menuContainer: {
+    position: 'absolute',
+    top: 48,            // 👈 Adjusted to sit right under the three dots
+    right: 14,
+    width: 200,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingVertical: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 1000,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  menuItemText: {
+    fontSize: 15,
+    marginLeft: 12,
+  },
+  menuDivider: {
+    height: 1,
+    marginVertical: 4,
+    marginHorizontal: 12,
+  },
   bottomBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -768,5 +860,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  logoutBtnText: { fontSize: 15, fontWeight: 'bold' },
+  logoutBtnText: { fontSize: 15, fontWeight: 'abold' },
 });

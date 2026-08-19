@@ -8,7 +8,10 @@ import ChatsListScreen from '../screens/home/ChatsListScreen';
 import ChatWindowScreen from '../screens/chat/ChatWindowScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
+import NotificationsScreen from '../screens/notifications/NotificationsScreen';
 import BaseScreen from '../screens/BaseScreen';
+import NewChatScreen from '../screens/chat/NewChatScreen';
+import NewGroupScreen from '../screens/chat/NewGroupScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -36,15 +39,18 @@ export default function AppNavigator() {
           <Stack.Screen name="ChatWindow" component={ChatWindowScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
           <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="NewChat" component={NewChatScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="NewGroup" component={NewGroupScreen} options={{ headerShown: false }} />
           
-          {/* Settings sub-screens */}
+          {/* Settings sub‑screens */}
           <Stack.Screen name="Account" component={BaseScreen} initialParams={{ title: 'Account' }} options={{ headerShown: false }} />
           <Stack.Screen name="PrivacySecurity" component={BaseScreen} initialParams={{ title: 'Privacy & Security' }} options={{ headerShown: false }} />
           <Stack.Screen name="Devices" component={BaseScreen} initialParams={{ title: 'Devices' }} options={{ headerShown: false }} />
           <Stack.Screen name="Chats" component={BaseScreen} initialParams={{ title: 'Chats' }} options={{ headerShown: false }} />
           <Stack.Screen name="MessageSettings" component={BaseScreen} initialParams={{ title: 'Message Settings' }} options={{ headerShown: false }} />
           <Stack.Screen name="BackupStorage" component={BaseScreen} initialParams={{ title: 'Backup & Storage' }} options={{ headerShown: false }} />
-          <Stack.Screen name="Notifications" component={BaseScreen} initialParams={{ title: 'Notifications' }} options={{ headerShown: false }} />
+          <Stack.Screen name="NotificationsSettings" component={BaseScreen} initialParams={{ title: 'Notifications Settings' }} options={{ headerShown: false }} />
           <Stack.Screen name="NotificationSound" component={BaseScreen} initialParams={{ title: 'Notification Sound' }} options={{ headerShown: false }} />
           <Stack.Screen name="ThemePicker" component={BaseScreen} initialParams={{ title: 'Theme' }} options={{ headerShown: false }} />
           <Stack.Screen name="AccentColor" component={BaseScreen} initialParams={{ title: 'Accent Color' }} options={{ headerShown: false }} />
