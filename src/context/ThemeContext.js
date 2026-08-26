@@ -1,9 +1,37 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { Appearance, useColorScheme } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// ─── Theme Presets ──────────────────────────────────────────
+export const THEME_PRESETS = {
+  ssgiBlue: {
+    name: 'SSGI Blue',
+    primary: '#1a4b8c',
+    secondary: '#6c5ce7',
+    accent: '#de994a',
+  },
+  gold: {
+    name: 'Gold',
+    primary: '#b8860b',
+    secondary: '#daa520',
+    accent: '#f0c040',
+  },
+  purple: {
+    name: 'Purple',
+    primary: '#6c5ce7',
+    secondary: '#a29bfe',
+    accent: '#fd79a8',
+  },
+  deepSpace: {
+    name: 'Deep Space',
+    primary: '#0f0e17',
+    secondary: '#1a1a2e',
+    accent: '#6c5ce7',
+  },
+};
+
+// ─── Base Color Schemes ────────────────────────────────────
 export const LightTheme = {
-  primary: '#1a4b8c',
-  secondary: '#6c5ce7',
-  accent: '#de994a',
   background: '#f0f2f5',
   surface: '#ffffff',
   card: '#ffffff',
@@ -17,64 +45,112 @@ export const LightTheme = {
   unreadBackground: '#1a4b8c',
   unreadText: '#ffffff',
   statusBar: 'dark-content',
-  // Light mode message bubbles
-  bubbleSent: '#1a4b8c',
-  bubbleReceived: '#e8e8ed',
   bubbleSentText: '#ffffff',
   bubbleReceivedText: '#1a1a2e',
 };
 
 export const DarkTheme = {
-  // 🪐 Cosmic Colors
-  primary: '#60a5fa',           // Bright sky blue
-  secondary: '#a78bfa',         // Soft purple
-  accent: '#fbbf24',            // Warm gold (stars)
-  
-  // 🌌 Glass background
-  background: '#0f0e17',        // Deep cosmic void
+  background: '#0f0e17',
   surface: 'rgba(255,255,255,0.04)',
   card: 'rgba(255,255,255,0.06)',
-  
-  // ✨ Crisp text
-  textPrimary: '#f8fafc',       // Bright white (not gray)
-  textSecondary: '#cbd5e1',     // Light gray-blue
-  textMuted: '#94a3b8',         // Muted blue-gray
-  
-  // 🪟 Glass borders
+  textPrimary: '#f8fafc',
+  textSecondary: '#cbd5e1',
+  textMuted: '#94a3b8',
   border: 'rgba(255,255,255,0.08)',
   shadow: 'rgba(96, 165, 250, 0.15)',
-  
-  // ✨ Glowing badges
   badgeBackground: 'rgba(167, 139, 250, 0.2)',
   badgeText: '#a78bfa',
   unreadBackground: '#60a5fa',
   unreadText: '#ffffff',
-  
-  // 💬 Glass message bubbles
-  bubbleSent: 'rgba(96, 165, 250, 0.25)',      // Glass blue
-  bubbleReceived: 'rgba(255,255,255,0.08)',    // Glass white
+  statusBar: 'light-content',
   bubbleSentText: '#f8fafc',
   bubbleReceivedText: '#f8fafc',
-  
-  // 🌟 Glow effects
-  glowColor: 'rgba(96, 165, 250, 0.15)',
-  
-  statusBar: 'light-content',
 };
 
 const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-  const [isDark, setIsDark] = useState(true);
+  const deviceColorScheme = useColorScheme();
 
-  const toggleTheme = () => {
-    setIsDark(!isDark);
+  // ─── State ──────────────────────────────────────────────────
+  const [themeMode, setThemeMode] = useState('system'); // 'light' | 'dark' | 'system'
+  const [preset, setPreset] = useState('ssgiBlue');
+  const [accentColor, setAccentColor] = useState(null); // if set, overrides preset accent
+
+  // ─── Computed colors ──────────────────────────────────────
+  const baseColors = themeMode === 'system' 
+    ? (deviceColorScheme === 'dark' ? DarkTheme : LightTheme)
+    : (themeMode === 'dark' ? DarkTheme : LightTheme);
+
+  const isDark = themeMode === 'system' 
+    ? deviceColorScheme === 'dark' 
+    : themeMode === 'dark';
+
+  const presetColors = THEME_PRESETS[preset] || THEME_PRESETS.ssgiBlue;
+  const primary = presetColors.primary;
+  const secondary = presetColors.secondary;
+  const accent = accentColor || presetColors.accent;
+
+  const theme = {
+    ...baseColors,
+    primary,
+    secondary,
+    accent,
+    bubbleSent: primary,
+    bubbleReceived: isDark ? 'rgba(255,255,255,0.08)' : '#e8e8ed',
   };
 
-  const theme = isDark ? DarkTheme : LightTheme;
+  // ─── Persistence ───────────────────────────────────────────
+  useEffect(() => {
+    loadPreferences();
+  }, []);
+
+  useEffect(() => {
+    savePreferences();
+  }, [themeMode, preset, accentColor]);
+
+  const loadPreferences = async () => {
+    try {
+      const saved = await AsyncStorage.getItem('theme_prefs');
+      if (saved) {
+        const prefs = JSON.parse(saved);
+        if (prefs.themeMode) setThemeMode(prefs.themeMode);
+        if (prefs.preset) setPreset(prefs.preset);
+        if (prefs.accentColor) setAccentColor(prefs.accentColor);
+      }
+    } catch (error) {
+      console.warn('Failed to load theme preferences', error);
+    }
+  };
+
+  const savePreferences = async () => {
+    try {
+      await AsyncStorage.setItem('theme_prefs', JSON.stringify({
+        themeMode,
+        preset,
+        accentColor,
+      }));
+    } catch (error) {
+      console.warn('Failed to save theme preferences', error);
+    }
+  };
+
+  const setTheme = (mode) => setThemeMode(mode);
+  const setThemePreset = (p) => setPreset(p);
+  const setCustomAccent = (color) => setAccentColor(color);
 
   return (
-    <ThemeContext.Provider value={{ theme, isDark, toggleTheme }}>
+    <ThemeContext.Provider value={{
+      theme,
+      isDark,
+      themeMode,
+      preset,
+      accentColor,
+      setTheme,
+      setThemePreset,
+      setCustomAccent,
+      toggleTheme: () => setThemeMode(prev => prev === 'dark' ? 'light' : 'dark'),
+    }}>
       {children}
     </ThemeContext.Provider>
   );

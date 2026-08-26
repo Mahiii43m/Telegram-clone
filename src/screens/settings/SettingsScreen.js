@@ -1,3 +1,4 @@
+// SettingsScreen.js - Full updated with direct navigation and safe handling
 import React from 'react';
 import {
   View,
@@ -28,21 +29,12 @@ export default function SettingsScreen({ navigation }) {
   const secondaryText = theme?.textSecondary || '#a0a0b0';
   const borderColor = theme?.border || 'rgba(255,255,255,0.08)';
   const cardColor = theme?.surface || 'rgba(255,255,255,0.06)';
-  const brandColor = theme?.primary || '#1a4b8c';       // Royal Blue
-  const accentColor = theme?.secondary || '#6c5ce7';    // Space Purple
-  const goldAccent = theme?.accent || '#de994a';        // Earth Gold
+  const brandColor = theme?.primary || '#1a4b8c';
+  const accentColor = theme?.secondary || '#6c5ce7';
 
+  // Simplified, direct navigation (no route check, just navigate)
   const navigateTo = (screen) => {
-    try {
-      const routes = navigation.getState()?.routes.map(r => r.name) || [];
-      if (routes.includes(screen)) {
-        navigation.navigate(screen);
-      } else {
-        Alert.alert(screen, 'Coming soon! 🚀');
-      }
-    } catch {
-      Alert.alert('Coming soon', 'This feature is on its way!');
-    }
+    navigation.navigate(screen);
   };
 
   const handleLogout = () => {
@@ -142,7 +134,7 @@ export default function SettingsScreen({ navigation }) {
         {renderNavItem('Backup & Storage', 'BackupStorage', 'cloud-outline')}
 
         {renderSectionHeader('NOTIFICATIONS & SOUNDS')}
-        {renderNavItem('Notifications', 'Notifications', 'notifications-outline')}
+        {renderNavItem('Notifications', 'NotificationsSettings', 'notifications-outline')}
         {renderNavItem('Notification Sound', 'NotificationSound', 'musical-notes-outline')}
 
         {renderSectionHeader('APPEARANCE')}
