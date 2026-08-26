@@ -68,7 +68,7 @@ export default function LoginScreen({ navigation }) {
     return;
   }
   if (password.length < 6) {
-    setError('Password must be at least 6 characters');
+    setError('Password must be at least 12 characters');
     return;
   }
 
