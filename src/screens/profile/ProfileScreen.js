@@ -1,4 +1,4 @@
-﻿import React from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -10,27 +10,44 @@ import {
   Alert,
   Linking,
   Switch,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import Typography from '../../components/Typography';
 import { SPACING, RADIUS } from '../../constants/typography';
+import { getUserProfile, saveUserProfile } from '../../services/userService';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../../firebase';
 
-const PROFILE_IMAGE = require('../../../assets/icon.png');
+const DEFAULT_AVATAR = require('../../../assets/icon.png');
 
 export default function ProfileScreen({ navigation }) {
   const { user, logout } = useAuth();
   const { theme, isDark } = useTheme();
 
-  const [notifications, setNotifications] = React.useState({
+  // ─── State ──────────────────────────────────────────────────────────────
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [profile, setProfile] = useState({
+    name: '',
+    email: '',
+    bio: '',
+    researchArea: '',
+    division: '',
+    profilePicture: null,
+  });
+  const [notifications, setNotifications] = useState({
     announcements: true,
     training: true,
     research: false,
     events: true,
   });
 
+  // ─── Theme Colors ──────────────────────────────────────────────────────
   const bgColor = theme?.background || '#0a0e1a';
   const textColor = theme?.textPrimary || '#ffffff';
   const secondaryText = theme?.textSecondary || '#a0a0b0';
@@ -40,6 +57,138 @@ export default function ProfileScreen({ navigation }) {
   const accentColor = theme?.secondary || '#6c5ce7';
   const goldAccent = theme?.accent || '#de994a';
 
+  // ─── Load Profile ──────────────────────────────────────────────────────
+  useEffect(() => {
+    loadProfile();
+    loadNotificationPreferences();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      if (!user?.uid) {
+        setProfile({
+          name: user?.displayName || 'Orbit User',
+          email: user?.email || 'orbiting@chat.com',
+          bio: '',
+          researchArea: '',
+          division: '',
+          profilePicture: null,
+        });
+        setLoading(false);
+        return;
+      }
+
+      const profileData = await getUserProfile(user.uid);
+      if (profileData) {
+        setProfile({
+          name: profileData.name || user?.displayName || 'Orbit User',
+          email: profileData.email || user?.email || 'orbiting@chat.com',
+          bio: profileData.bio || '',
+          researchArea: profileData.researchArea || '',
+          division: profileData.division || '',
+          profilePicture: profileData.profilePicture || null,
+        });
+      } else {
+        setProfile({
+          name: user?.displayName || 'Orbit User',
+          email: user?.email || 'orbiting@chat.com',
+          bio: '',
+          researchArea: '',
+          division: '',
+          profilePicture: null,
+        });
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadNotificationPreferences = async () => {
+    try {
+      // You can extend this to load from Firestore
+      // For now, keep the default values
+    } catch (error) {
+      console.error('Error loading notification preferences:', error);
+    }
+  };
+
+  // ─── Profile Picture ──────────────────────────────────────────────────
+  const pickImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'We need camera roll permissions to change your avatar.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+
+      if (!result.canceled && result.assets?.[0]) {
+        const imageUri = result.assets[0].uri;
+        await uploadProfilePicture(imageUri);
+      }
+    } catch (error) {
+      console.error('Image pick error:', error);
+      Alert.alert('Error', 'Failed to pick image. Please try again.');
+    }
+  };
+
+  const uploadProfilePicture = async (imageUri) => {
+    if (!user?.uid) return;
+    
+    setSaving(true);
+    try {
+      // Convert image to blob
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+
+      // Upload to Firebase Storage
+      const storageRef = ref(storage, `profile-pictures/${user.uid}`);
+      await uploadBytes(storageRef, blob);
+      const downloadUrl = await getDownloadURL(storageRef);
+
+      // Update Firestore
+      await saveUserProfile(user.uid, { profilePicture: downloadUrl });
+
+      // Update local state
+      setProfile(prev => ({ ...prev, profilePicture: downloadUrl }));
+      Alert.alert('Success', 'Profile picture updated!');
+    } catch (error) {
+      console.error('Upload error:', error);
+      Alert.alert('Error', 'Failed to upload profile picture.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ─── Notification Toggle ─────────────────────────────────────────────
+  const toggleNotification = (key) => {
+    setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
+    // Optionally save to Firestore here
+  };
+
+  // ─── Render Toggle Item ──────────────────────────────────────────────
+  const renderToggleItem = (label, key) => (
+    <View style={[styles.toggleRow, { borderBottomColor: borderColor }]}>
+      <Typography variant="body" color={textColor}>{label}</Typography>
+      <Switch
+        value={notifications[key]}
+        onValueChange={() => toggleNotification(key)}
+        trackColor={{ false: '#3a3a5a', true: brandColor }}
+        thumbColor={notifications[key] ? '#ffffff' : '#f4f3f4'}
+        ios_backgroundColor="#3a3a5a"
+      />
+    </View>
+  );
+
+  // ─── Handlers ──────────────────────────────────────────────────────────
   const handleLogout = () => {
     Alert.alert(
       'Sign Out',
@@ -57,27 +206,25 @@ export default function ProfileScreen({ navigation }) {
     });
   };
 
-  const toggleNotification = (key) => {
-    setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
+  const navigateToEditProfile = () => {
+    navigation.navigate('Account');
   };
 
-  const renderToggleItem = (label, key) => (
-    <View style={styles.toggleRow}>
-      <Typography variant="body" color={textColor}>{label}</Typography>
-      <Switch
-        value={notifications[key]}
-        onValueChange={() => toggleNotification(key)}
-        trackColor={{ false: '#3a3a5a', true: brandColor }}
-        thumbColor={notifications[key] ? '#ffffff' : '#f4f3f4'}
-        ios_backgroundColor="#3a3a5a"
-      />
-    </View>
-  );
+  // ─── Loading State ────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={brandColor} />
+          <Typography variant="body" color={secondaryText} style={styles.loadingText}>
+            Loading profile...
+          </Typography>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
-  const showComingSoon = () => {
-    Alert.alert('Coming Soon', 'This feature will be available in a future update.');
-  };
-
+  // ─── Main Render ──────────────────────────────────────────────────────
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
@@ -94,41 +241,60 @@ export default function ProfileScreen({ navigation }) {
         <Typography variant="heading3" color={textColor} style={styles.headerTitle}>
           Profile
         </Typography>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity onPress={navigateToEditProfile} style={styles.editHeaderBtn}>
+          <Ionicons name="pencil-outline" size={22} color={accentColor} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Avatar */}
-        <View style={styles.avatarWrapper}>
+        {/* ─── Avatar ──────────────────────────────────────────────────── */}
+        <TouchableOpacity style={styles.avatarWrapper} onPress={pickImage} disabled={saving}>
           <View style={styles.avatarContainer}>
-            <Image source={PROFILE_IMAGE} style={styles.avatar} resizeMode="contain" />
+            {profile.profilePicture ? (
+              <Image source={{ uri: profile.profilePicture }} style={styles.avatar} />
+            ) : (
+              <Image source={DEFAULT_AVATAR} style={styles.avatar} resizeMode="contain" />
+            )}
           </View>
-          <TouchableOpacity style={styles.editAvatarBtn} onPress={showComingSoon}>
+          <TouchableOpacity style={styles.editAvatarBtn} onPress={pickImage}>
             <Ionicons name="camera-outline" size={18} color="#ffffff" />
           </TouchableOpacity>
-        </View>
+          {saving && (
+            <View style={styles.savingOverlay}>
+              <ActivityIndicator size="small" color="#ffffff" />
+            </View>
+          )}
+        </TouchableOpacity>
 
-        {/* User Info */}
+        {/* ─── User Info ──────────────────────────────────────────────── */}
         <View style={styles.userInfo}>
           <Typography variant="heading2" color={textColor}>
-            {user?.name || 'Orbit User'}
+            {profile.name || 'Orbit User'}
           </Typography>
           <Typography variant="body" color={secondaryText}>
-            {user?.email || 'orbiting@chat.com'}
+            {profile.email || 'orbiting@chat.com'}
           </Typography>
 
           <View style={styles.detailRow}>
             <Ionicons name="flask-outline" size={16} color={accentColor} />
             <Typography variant="caption" color={secondaryText} style={styles.detailText}>
-              Research Area: Space Weather & Geospatial Analysis
+              {profile.researchArea || 'Research Area not set'}
             </Typography>
           </View>
           <View style={styles.detailRow}>
-            <Ionicons name="calendar-outline" size={16} color={accentColor} />
+            <Ionicons name="layers-outline" size={16} color={accentColor} />
             <Typography variant="caption" color={secondaryText} style={styles.detailText}>
-              Member since 2025
+              {profile.division || 'Division not set'}
             </Typography>
           </View>
+          {profile.bio ? (
+            <View style={styles.detailRow}>
+              <Ionicons name="text-outline" size={16} color={accentColor} />
+              <Typography variant="caption" color={secondaryText} style={styles.detailText}>
+                {profile.bio}
+              </Typography>
+            </View>
+          ) : null}
 
           <View style={styles.badgeContainer}>
             <View style={[styles.badge, { backgroundColor: accentColor + '20' }]}>
@@ -143,7 +309,7 @@ export default function ProfileScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Organization */}
+        {/* ─── Organization ───────────────────────────────────────────── */}
         <View style={[styles.organizationCard, { backgroundColor: cardColor, borderColor: borderColor }]}>
           <View style={styles.orgHeader}>
             <Ionicons name="business-outline" size={22} color={goldAccent} />
@@ -162,7 +328,7 @@ export default function ProfileScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* Research Interests */}
+        {/* ─── Research Interests ────────────────────────────────────── */}
         <View style={[styles.optionsCard, { backgroundColor: cardColor, borderColor: borderColor }]}>
           <Typography variant="label" color={secondaryText} style={styles.sectionLabel}>
             RESEARCH INTERESTS
@@ -176,38 +342,38 @@ export default function ProfileScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Account Settings */}
+        {/* ─── Account Settings ───────────────────────────────────────── */}
         <View style={[styles.optionsCard, { backgroundColor: cardColor, borderColor: borderColor }]}>
           <Typography variant="label" color={secondaryText} style={styles.sectionLabel}>
             ACCOUNT SETTINGS
           </Typography>
 
-          <TouchableOpacity style={styles.optionItem} activeOpacity={0.6} onPress={showComingSoon}>
+          <TouchableOpacity style={[styles.optionItem, { borderBottomColor: borderColor }]} onPress={navigateToEditProfile}>
             <Ionicons name="person-outline" size={22} color={accentColor} style={styles.optionIcon} />
             <Typography variant="body" color={textColor}>Edit Profile</Typography>
             <Ionicons name="chevron-forward-outline" size={18} color={secondaryText} style={styles.optionArrow} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.optionItem} activeOpacity={0.6} onPress={showComingSoon}>
+          <TouchableOpacity style={[styles.optionItem, { borderBottomColor: borderColor }]} onPress={() => Alert.alert('Coming Soon', 'Change Password feature coming soon!')}>
             <Ionicons name="key-outline" size={22} color={accentColor} style={styles.optionIcon} />
             <Typography variant="body" color={textColor}>Change Password</Typography>
             <Ionicons name="chevron-forward-outline" size={18} color={secondaryText} style={styles.optionArrow} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.optionItem} activeOpacity={0.6} onPress={showComingSoon}>
+          <TouchableOpacity style={[styles.optionItem, { borderBottomColor: borderColor }]} onPress={() => Alert.alert('Coming Soon', 'Publications feature coming soon!')}>
             <Ionicons name="document-text-outline" size={22} color={accentColor} style={styles.optionIcon} />
             <Typography variant="body" color={textColor}>My Publications</Typography>
             <Ionicons name="chevron-forward-outline" size={18} color={secondaryText} style={styles.optionArrow} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.optionItem} activeOpacity={0.6} onPress={showComingSoon}>
+          <TouchableOpacity style={[styles.optionItem, { borderBottomColor: borderColor }]} onPress={() => Alert.alert('Coming Soon', 'Group Chats feature coming soon!')}>
             <Ionicons name="people-outline" size={22} color={accentColor} style={styles.optionIcon} />
             <Typography variant="body" color={textColor}>Group Chats</Typography>
             <Ionicons name="chevron-forward-outline" size={18} color={secondaryText} style={styles.optionArrow} />
           </TouchableOpacity>
         </View>
 
-        {/* Notification Preferences */}
+        {/* ─── Notification Preferences ──────────────────────────────── */}
         <View style={[styles.optionsCard, { backgroundColor: cardColor, borderColor: borderColor }]}>
           <Typography variant="label" color={secondaryText} style={styles.sectionLabel}>
             NOTIFICATION PREFERENCES
@@ -219,12 +385,13 @@ export default function ProfileScreen({ navigation }) {
           {renderToggleItem('Events & Conferences', 'events')}
         </View>
 
-        {/* Logout */}
+        {/* ─── Logout ──────────────────────────────────────────────────── */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
           <Ionicons name="log-out-outline" size={20} color="#ffffff" style={{ marginRight: SPACING.sm }} />
           <Typography variant="body" color="#ffffff" style={styles.logoutText}>Sign Out</Typography>
         </TouchableOpacity>
 
+        {/* ─── Footer ──────────────────────────────────────────────────── */}
         <View style={styles.footer}>
           <Typography variant="caption" color={secondaryText} style={styles.footerText}>
             Orbit Chat v1.0.0
@@ -250,11 +417,18 @@ const styles = StyleSheet.create({
   },
   backButton: { padding: SPACING.xs, width: 40 },
   headerTitle: { flex: 1, textAlign: 'center' },
+  editHeaderBtn: { padding: SPACING.sm },
   scrollContent: {
     alignItems: 'center',
     paddingHorizontal: SPACING.lg,
     paddingBottom: SPACING['2xl'],
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: { marginTop: SPACING.md },
   avatarWrapper: {
     position: 'relative',
     marginTop: SPACING.lg,
@@ -271,9 +445,9 @@ const styles = StyleSheet.create({
     borderColor: '#6c5ce7',
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
   },
   editAvatarBtn: {
     position: 'absolute',
@@ -287,6 +461,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#0a0e1a',
+  },
+  savingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   userInfo: {
     alignItems: 'center',
@@ -364,7 +549,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
   },
   optionIcon: { marginRight: SPACING.md },
   optionArrow: { marginLeft: 'auto' },
@@ -374,7 +558,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
   },
   tagsContainer: {
     flexDirection: 'row',

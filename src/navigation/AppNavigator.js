@@ -12,6 +12,17 @@ import NotificationsScreen from '../screens/notifications/NotificationsScreen';
 import BaseScreen from '../screens/BaseScreen';
 import NewChatScreen from '../screens/chat/NewChatScreen';
 import NewGroupScreen from '../screens/chat/NewGroupScreen';
+import AboutScreen from '../screens/settings/AboutScreen';
+import AccountScreen from '../screens/settings/AccountScreen';
+import ThemeScreen from '../screens/settings/ThemeScreen';
+import NotificationsSettingsScreen from '../screens/settings/NotificationsSettingsScreen';
+import PrivacySecurityScreen from '../screens/settings/PrivacySecurityScreen';
+import HelpFAQScreen from '../screens/settings/HelpFAQScreen';
+import ChatSettingsScreen from '../screens/settings/ChatSettingsScreen';
+import BackupStorageScreen from '../screens/settings/BackupStorageScreen';
+import MessageSettingsScreen from '../screens/settings/MessageSettingsScreen';
+// ✅ New DevicesScreen import
+import DevicesScreen from '../screens/settings/DevicesScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -43,19 +54,20 @@ export default function AppNavigator() {
           <Stack.Screen name="NewChat" component={NewChatScreen} options={{ headerShown: false }} />
           <Stack.Screen name="NewGroup" component={NewGroupScreen} options={{ headerShown: false }} />
           
-          {/* Settings sub‑screens */}
-          <Stack.Screen name="Account" component={BaseScreen} initialParams={{ title: 'Account' }} options={{ headerShown: false }} />
-          <Stack.Screen name="PrivacySecurity" component={BaseScreen} initialParams={{ title: 'Privacy & Security' }} options={{ headerShown: false }} />
-          <Stack.Screen name="Devices" component={BaseScreen} initialParams={{ title: 'Devices' }} options={{ headerShown: false }} />
-          <Stack.Screen name="Chats" component={BaseScreen} initialParams={{ title: 'Chats' }} options={{ headerShown: false }} />
-          <Stack.Screen name="MessageSettings" component={BaseScreen} initialParams={{ title: 'Message Settings' }} options={{ headerShown: false }} />
-          <Stack.Screen name="BackupStorage" component={BaseScreen} initialParams={{ title: 'Backup & Storage' }} options={{ headerShown: false }} />
-          <Stack.Screen name="NotificationsSettings" component={BaseScreen} initialParams={{ title: 'Notifications Settings' }} options={{ headerShown: false }} />
+          {/* ─── Settings Sub‑screens ─────────────────────────── */}
+          <Stack.Screen name="Account" component={AccountScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="PrivacySecurity" component={PrivacySecurityScreen} options={{ headerShown: false }} />
+          {/* ✅ Devices now uses the real screen */}
+          <Stack.Screen name="Devices" component={DevicesScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Chats" component={ChatSettingsScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="MessageSettings" component={MessageSettingsScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="BackupStorage" component={BackupStorageScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="NotificationsSettings" component={NotificationsSettingsScreen} options={{ headerShown: false }} />
           <Stack.Screen name="NotificationSound" component={BaseScreen} initialParams={{ title: 'Notification Sound' }} options={{ headerShown: false }} />
-          <Stack.Screen name="ThemePicker" component={BaseScreen} initialParams={{ title: 'Theme' }} options={{ headerShown: false }} />
+          <Stack.Screen name="ThemePicker" component={ThemeScreen} options={{ headerShown: false }} />
           <Stack.Screen name="AccentColor" component={BaseScreen} initialParams={{ title: 'Accent Color' }} options={{ headerShown: false }} />
-          <Stack.Screen name="HelpFAQ" component={BaseScreen} initialParams={{ title: 'Help & FAQ' }} options={{ headerShown: false }} />
-          <Stack.Screen name="About" component={BaseScreen} initialParams={{ title: 'About Orbit Chat' }} options={{ headerShown: false }} />
+          <Stack.Screen name="HelpFAQ" component={HelpFAQScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="About" component={AboutScreen} options={{ headerShown: false }} />
         </>
       )}
     </Stack.Navigator>
